@@ -1,7 +1,7 @@
 import pygame
 from typing import TYPE_CHECKING
 from .game_state import GameState
-from ..core import OverlayType, GameBoardController
+from ..core import OverlayType
 from .state_id import StateID
 
 if TYPE_CHECKING:
@@ -17,9 +17,6 @@ class PlayState(GameState):
     """
     def __init__(self, game: "Game"):
         super().__init__(game)
-    
-
-      
 
     @property
     def overlay_type(self) -> OverlayType:

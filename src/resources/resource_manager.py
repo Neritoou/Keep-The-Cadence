@@ -138,7 +138,6 @@ class ResourceManager:
         _load_images(self)
         _load_fonts(self)
         _load_sounds(self)
-        _load_pieces(self)
 
 
 
