@@ -1,4 +1,3 @@
-from arcade_machine_sdk import json
 from ..util.conversors import pygame_key_to_str, str_to_pygame_key
 from .base_config import BaseConfig
 
@@ -25,7 +24,7 @@ class ControlsConfig(BaseConfig[ControlsConfigType]):
         self.max_keys_for_action = max_keys_for_action
         
         # Cargar JSON y convertir
-        raw = json.load(path)
+        raw = self._load_json(path)
         converted = self._convert_from_json(raw)
         
         # Inicializar BaseConfig
@@ -80,11 +79,11 @@ class ControlsConfig(BaseConfig[ControlsConfigType]):
     def apply_changes(self) -> None:
         """Aplica cambios y guarda al JSON."""
         super().apply_changes()
-        json.save(self.path, self._convert_to_json())
+        self.save(self.path, self._convert_to_json())
     
     def reload(self) -> None:
         """Recarga desde el archivo, descartando cambios no guardados."""
-        raw = json.load(self.path)
+        raw = self._load_json(self.path)
         self._data = self._convert_from_json(raw)
         self._buffer = self._data.copy()
         self._modified = False
