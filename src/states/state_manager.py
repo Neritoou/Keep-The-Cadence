@@ -1,8 +1,9 @@
-from ..core.types import OverlayType
 from typing import Type, TYPE_CHECKING
-from .state_id import StateID
+from .types import StateID, OverlayType
 from .play_state import PlayState
 from .menu_state import MenuState
+from .chart_creator_state import ChartCreatorState
+from .chart_setup_state import ChartSetupState
 import pygame
 
 if TYPE_CHECKING:
@@ -20,6 +21,8 @@ class StateManager:
         self._state_classes: dict[StateID, Type["GameState"]] = {
             StateID.PLAY: PlayState,
             StateID.MENU: MenuState,
+            StateID.CHART_CREATOR: ChartCreatorState,
+            StateID.CHART_SETUP: ChartSetupState
         }
 
     @property

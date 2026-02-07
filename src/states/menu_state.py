@@ -1,10 +1,10 @@
 import pygame
 from typing import TYPE_CHECKING
 
-from .state_id import StateID
+from .types import StateID
 from .game_state import GameState
 
-from ..core import OverlayType
+from .types import OverlayType
 from ..ui import UIManager
 
 if TYPE_CHECKING:
@@ -64,7 +64,7 @@ class MenuState(GameState):
             self.option -= 1
         if self.game.input.is_action_pressed("ui", "select"):
             if self.option % 3 == 0:
-                self.game.state.change(StateID.PLAY)
+                self.game.state.change(StateID.CHART_SETUP)
             elif self.option % 3 == 1:
                 print("ESCENA DE CREDITOS")
             elif self.option % 3 == 2:
