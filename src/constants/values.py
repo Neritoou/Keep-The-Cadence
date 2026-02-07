@@ -1,2 +1,20 @@
 BASE_RESOLUTION = (1280,720)
 DEFAULT_FPS = 60
+
+# Datos de las notas
+BASE_PIXELS_PER_MS = 0.45
+SPAWN_TIME_MS = 2000
+NOTE_BLOCK_W =  229 
+NOTE_BLOCK_H = 28
+NOTE_PARTICLE_BLOCK_W = 275
+NOTE_PARTICLE_BLOCK_H = 303 
+
+HIT_LINE_Y_DOWN = 40
+HIT_LINE_XS: tuple[int,int,int,int] = (400, 550, 700, 850) # Cambiar
+HIT_LINE_XS_EDITOR: tuple[int,int,int,int] = (400, 550, 700, 850)
+
+SCROLL_SPEEDS = {
+    "EASY": 0.75,
+    "NORMAL": 1.0,
+    "HARD": 1.5
+}
