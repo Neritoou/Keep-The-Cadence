@@ -1,11 +1,13 @@
 import pygame
 from typing import TypeVar, TYPE_CHECKING
 from .spritesheet import SpriteSheet
+from .note_library import NoteLibrary
 from .loaders import *
 from .types import *
 
 if TYPE_CHECKING:
     from .types import AudioCategory
+    from ..core.types import NoteData, NoteSurfaces, NoteDataType
 
 T = TypeVar("T")
 K = TypeVar("K")
@@ -19,6 +21,8 @@ class ResourceManager:
         self._sounds: dict[AudioCategory, dict[str, SoundResource]] = {}
         self._musics: dict[str, MusicResource] = {}
         self._spritesheets: dict[str, SpriteSheetResource] = {}
+        
+        self._note_library: NoteLibrary = NoteLibrary()
 
         self._loaded_paths: dict[str, str] = {}
 
@@ -66,6 +70,14 @@ class ResourceManager:
     
     def get_music_paths(self) -> dict[str, MusicResource]:
         return self._musics
+
+    def get_note(self, direction: int) -> "NoteData":
+        """Obtiene una nota registrada en la biblioteca."""
+        return self._note_library.get_note(direction)
+    
+    def get_all_notes(self) -> "NoteDataType":
+        """Obtiene un diccionario de todas las notas registradas."""
+        return self._note_library.notes
 
 
     # --- LOADERS ---
@@ -138,6 +150,10 @@ class ResourceManager:
         self._spritesheets[key] = {"path": path, "spritesheet": SpriteSheet(image,frame_size,padding)}
         self._loaded_paths[path] = key
 
+    def load_note(self, direction: int, notes: "NoteSurfaces", particles: list[pygame.Surface]) -> None:
+        """Registra una nota en la biblioteca interna."""
+        self._note_library.register_note(direction, notes, particles)
+
 
     # --- UNLOADERS ---
     def unload_image(self, key: str) -> None:
@@ -188,6 +204,7 @@ class ResourceManager:
         _load_fonts(self)
         _load_sounds(self)
         _load_music_paths(self)
+        _load_notes(self)
     
 
     # --- HELPERS ---
