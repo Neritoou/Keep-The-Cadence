@@ -1,4 +1,5 @@
 from enum import Enum, IntEnum
+from pygame import Surface
 from typing import TypedDict
 
 class NoteDirection(IntEnum):
@@ -19,22 +20,36 @@ class ScrollDirection(Enum):
     UP = 1          # Notas suben (FNF clásico)
     DOWN = -1       # Notas bajan (DDR style)
 
-class NoteData(TypedDict):
+class JsonNoteData(TypedDict):
     """Representación JSON de una nota"""
     hitTime: float      # Tiempo cuando debe golpearse (ms)
     duration: float     # Duración de hold note (0 si es TAP)
     direction: int      # Dirección (0=LEFT, 1=DOWN, 2=UP, 3=RIGHT)
 
-class SectionData(TypedDict):
+class JsonSectionData(TypedDict):
     """Representación JSON de una sección"""
     index: int          # Índice de la sección
     startTime: float    # Tiempo de inicio (ms)
     endTime: float      # Tiempo de fin (ms)
-    notes: list[NoteData]  # Lista de notas en la sección
+    notes: list[JsonNoteData]  # Lista de notas en la sección
 
-class ChartData(TypedDict):
+class JsonChartData(TypedDict):
     """Representación JSON completa del chart"""
     song: str               # Path al archivo de audio
     bpm: int                # BPM de la canción
     pixels_per_ms: float            # Velocidad de scroll
-    sections: list[SectionData]  # Lista de secciones
+    sections: list[JsonSectionData]  # Lista de secciones
+
+class NoteSurfaces(TypedDict):
+    missed: Surface
+    default: Surface
+    spawned: Surface
+    pressed: list[Surface]
+    hold: Surface
+    end_hold: Surface
+
+class NoteData(TypedDict):
+    notes: NoteSurfaces
+    particles: list[Surface]
+
+NoteDataType = dict[int, NoteData]  # Diccionario de charts por nombre
