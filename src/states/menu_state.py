@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from .types import StateID, OverlayType
 from .game_state import GameState
 
-from enfocate import SCREEN_SIZE
+from enfocate import SCREEN_SIZE, COLORS
 from ..ui import UIManager, UIMenu, UILabel
 
 if TYPE_CHECKING:
@@ -26,11 +26,11 @@ class MenuState(GameState):
         self.font1 = self.game.resources.get_font("Estandar", 100)
         self.font2 = self.game.resources.get_font("Estandar", 48)
 
-        self.title = UILabel("game_title", screen_center_w, 120, "KEEP THE CADENCE", self.font1, (50, 205, 50))
+        self.title = UILabel("game_title", screen_center_w, 120, "KEEP THE CADENCE", self.font1, COLORS["coral_pastel"])
         self.title.center_at(screen_center_w)
 
         self.menu = UIMenu(
-            "main_menu", screen_center_w, 360, options_list,
+            "main_menu", screen_center_w, 330, options_list,
             self.font2, spacing=80, center_text=True
             )
         
