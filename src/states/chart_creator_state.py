@@ -3,7 +3,7 @@ from .game_state import GameState
 from .types import OverlayType, StateID
 from ..core.chart_editor import ChartEditor
 from ..core.types import NoteDirection, ScrollDirection
-from ..constants import BASE_PIXELS_PER_MS, SPAWN_TIME_MS, HIT_LINE_Y_DOWN, HIT_LINE_XS_EDITOR
+from ..constants import BASE_PIXELS_PER_MS, SPAWN_TIME_MS, HIT_LINE_Y_UP, HIT_LINE_XS_EDITOR
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -14,17 +14,17 @@ class ChartCreatorState(GameState):
     
     def __init__(self, game: "Game", bpm: int, song_path: str, song_name: str, chart_path: str):
         super().__init__(game)
-        
-        self.editor = ChartEditor(
+        notes = self.game.resources.get_all_notes()
+        self.editor = ChartEditor(notes_data = notes,
             song_path = song_path,
             song_name = song_name,
             bpm = bpm, 
             chart_path = chart_path,
-            hit_line_y = HIT_LINE_Y_DOWN, 
+            hit_line_y = HIT_LINE_Y_UP, 
             hit_line_xs = HIT_LINE_XS_EDITOR, 
-            scroll_direction = ScrollDirection.DOWN,
+            scroll_direction = ScrollDirection.UP,
             spawn_time_ms = SPAWN_TIME_MS,
-            base_pixels_per_ms = BASE_PIXELS_PER_MS
+            base_pixels_per_ms = BASE_PIXELS_PER_MS,
         )
 
         self.key_to_direction = {
@@ -33,9 +33,11 @@ class ChartCreatorState(GameState):
             pygame.K_s: NoteDirection.DOWN,
             pygame.K_d: NoteDirection.RIGHT
         }
+
     
     def update(self, dt):
-        self.editor.update()
+        self.editor.update(dt)
+
 
     def render(self, surface):
         self.editor.render(surface)
@@ -43,16 +45,18 @@ class ChartCreatorState(GameState):
     def handle_input(self, events):
         # NOTAS
         for key, direction in self.key_to_direction.items():
-            # Presionar
+            # Presionar            
+
             if self.game.input.is_key_pressed(key):
                 self.editor.on_key_press(direction)
 
             elif self.game.input.is_key_held(key):
                 self.editor.on_key_hold(direction)
-                
+    
             # Soltar
             if self.game.input.is_key_released(key):
                 self.editor.on_key_release(direction)
+
     
         # VELOCIDAD DE LAS NOTAS
         if self.game.input.is_key_pressed(pygame.K_LEFT):

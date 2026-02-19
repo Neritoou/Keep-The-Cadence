@@ -10,19 +10,21 @@ from ..types import NoteDirection
 from .types import EditorKeyState, EditorInfo
 
 if TYPE_CHECKING:
-    from ..types import ScrollDirection, ChartData, SectionData
+    from ..types import ScrollDirection, JsonChartData, JsonSectionData
+    from ..types import NoteDataType
 
 class ChartEditor:
     """Editor de charts"""
     def __init__(self, song_path: str, song_name: str, bpm: int, chart_path: str, hit_line_y: int, 
                  hit_line_xs: tuple[int,int,int,int], scroll_direction: "ScrollDirection",
-                 base_pixels_per_ms: float, spawn_time_ms: float,):
+                 base_pixels_per_ms: float, spawn_time_ms: float, notes_data: "NoteDataType"):
         
         # Config Base
+        self.notes_data = notes_data
         self.song_name = song_name
         self.song_path = song_path
         self.chart_path = chart_path
-        self.bpm = bpm # (!) 130 LA CANCIÓN
+        self.bpm = bpm
         self.scroll_direction = scroll_direction
         self.base_pixels_per_ms = base_pixels_per_ms
 
@@ -37,7 +39,6 @@ class ChartEditor:
         # Datos de las Notas
         self.hit_line_y = hit_line_y
         self.hit_line_xs = hit_line_xs
-        self.colors = [(0, 255, 0), (255, 0, 0), (0, 255, 255), (255, 0, 255)]
 
         # Componentes
         self.music = MusicEditorController(self.song_path, base_pixels_per_ms)
@@ -48,10 +49,12 @@ class ChartEditor:
 
         self.ui = ChartEditorUI(self.screen_width, self.screen_height)
 
-        self.note_renderer = NoteRenderer(
-            hit_line_xs, self.colors, hit_line_y, 
-            self.scroll_direction, spawn_time_ms,
-            self.screen_height
+        self.note_renderer = NoteRenderer(notes_data,
+                                          hit_line_xs,
+                                          hit_line_y,
+                                          scroll_direction,
+                                          spawn_time_ms,
+                                          self.screen_height
         )
 
         # Estado de teclas
@@ -64,7 +67,6 @@ class ChartEditor:
 
         self._spawn_time_ms = spawn_time_ms
         self._update_spawn_time_ms()
-
         # Crear primera sección
         self.note_section.create(0, 0.0)
 
@@ -173,15 +175,13 @@ class ChartEditor:
         # Si ya está presionada, ignorar (evitar re-triggers)
         if key_state.is_pressed:
             return
-            
+        self.note_renderer.press_hit(direction)
         # Marcar como presionada y guardar tiempo
         key_state.is_pressed = True
         key_state.press_start_time = self.music.current_time
         key_state.is_hold_note = False
 
-        # Crear nota fantasma
-        self.note_controller.add_ghost_note(direction)
-        print(f"LOG: Tecla presionada: {direction.name} @ {self.music.current_time:.0f}ms")
+
     
     def on_key_hold(self, direction: NoteDirection) -> None:
         """ Maneja cuando se mantiene una tecla. """
@@ -206,21 +206,19 @@ class ChartEditor:
             key_state.reset()
             return
         
+        self.note_renderer.release_key(direction)
         # Calcular duración
         duration = 0.0
         if key_state.is_hold_note:
-            duration = max(self.music.current_time - key_state.press_start_time, 0)
-        
+            duration = max(self.music.current_time - key_state.press_start_time, 0.0)
+
         # Crear nota
         note = self.note_controller.place_note(
             self.note_section.current,
             direction, 
             key_state.press_start_time,
             duration
-        )
-        
-        # Quitar nota fantasma
-        self.note_controller.remove_ghost_note(direction)
+        ) 
 
         # Log
         note_type = "HOLD" if note.is_hold_note else "TAP"
@@ -242,10 +240,11 @@ class ChartEditor:
             
         print(f"Nota eliminada: {direction.name}")
 
-    def update(self) -> None:
+    def update(self,dt: float) -> None:
         """Actualiza el editor cada frame"""
         self.music.update()
-        
+        # Actualizar estados
+        self.note_renderer.update(dt)
         current = self.note_section.current
         
         # Si Sección abierta alcanzó fin de canción
@@ -258,6 +257,7 @@ class ChartEditor:
         if current.end_time is not None:
             if self.music.has_reached(current.end_time):
                 self._handle_section_end()
+
         
     def _handle_song_end(self) -> None:
         """Maneja cuando se alcanza el fin de la canción"""
@@ -281,17 +281,16 @@ class ChartEditor:
     def render(self, surface: pygame.Surface) -> None:
         """Renderiza todo"""
         surface.fill((30, 30, 30))
-        
         # Notas
         if self.note_section.current.end_time is not None:
+            self.note_renderer.draw_default_notes(surface) 
             self.note_renderer.draw_notes(
                 surface,
                 self.note_section.current.notes,
                 self.music.current_time, 
                 self.music.pixels_per_ms)
-        self.note_controller.draw_ghost_notes(surface,self.hit_line_xs,self.hit_line_y,self.colors)
-        self.note_renderer.draw_hit_line(surface)
-   
+        else:
+            self.note_renderer.draw_receptors(surface)
         # UI
         self.note_section.draw_list(surface, self.ui.font_small)
                 
@@ -331,7 +330,7 @@ class ChartEditor:
             return
             
         # Construir datos del chart
-        chart_data: "ChartData" = {
+        chart_data: "JsonChartData" = {
             "song": self.song_name,
             "bpm": self.bpm,
             "pixels_per_ms": self.music.pixels_per_ms,
@@ -346,7 +345,7 @@ class ChartEditor:
                 )
                 
             # Construir datos de la sección
-            section_data: "SectionData" = {
+            section_data: "JsonSectionData" = {
                 "index": section.index,
                 "startTime": section.start_time,
                 "endTime": section.end_time,
@@ -365,7 +364,3 @@ class ChartEditor:
         # Guardar a archivo
         with open(self.chart_path, 'w', encoding='utf-8') as f:
             json.dump(chart_data, f, indent=2, ensure_ascii=False)
-
-
-
-
