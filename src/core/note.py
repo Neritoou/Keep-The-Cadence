@@ -17,6 +17,10 @@ class Note:
         self.hit_time = hit_time
         self.direction = direction
         self.duration = duration 
+        
+    def __lt__(self, other: "Note"):
+        """Define como comparar las notas."""
+        return self.hit_time < other.hit_time
 
     @property
     def end_time(self) -> float:
