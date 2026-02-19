@@ -1,7 +1,7 @@
-from pygame import Surface, draw
 from typing import TYPE_CHECKING
 from ..note import Note
 from ..types import NoteDirection
+from ...constants import MIN_HOLD_DURATION_MS
 
 if TYPE_CHECKING:
     from .types import Section
@@ -13,14 +13,6 @@ class NoteEditorController:
         self.ms_per_step = ms_per_step
         self.snap_enabled = True
 
-        # Diccionario de ghost notes: True = activa, False = inactiva
-        self.ghost_notes: dict[NoteDirection, bool] = {
-            NoteDirection.UP: False,
-            NoteDirection.LEFT: False,
-            NoteDirection.DOWN: False,
-            NoteDirection.RIGHT: False
-        }
-
     def snap_time_to_grid(self, time: float) -> float:
         """Ajusta un tiempo al grid más cercano"""
         if not self.snap_enabled:
@@ -31,7 +23,7 @@ class NoteEditorController:
         """Alterna snap to grid"""
         self.snap_enabled = not self.snap_enabled
 
-    def place_note(self, section: "Section", direction: int, hit_time: float, duration: float) -> Note:
+    def place_note(self, section: "Section", direction: NoteDirection, hit_time: float, duration: float) -> Note:
         """Crea una nota en la sección."""
         hit_time = self.snap_time_to_grid(hit_time)
                 
@@ -39,7 +31,7 @@ class NoteEditorController:
         hit_time = min(hit_time, self.song_duration - self.ms_per_step) # Evitar que supere la sección
 
         # Validar duración mínima ANTES del snap
-        if duration < self.ms_per_step:
+        if duration < MIN_HOLD_DURATION_MS: 
             duration = 0.0
         else:
             # Limitar duración por canción
@@ -52,7 +44,7 @@ class NoteEditorController:
 
         duration = self.snap_time_to_grid(duration)
         duration = max(duration, 0.0)
-            
+                     
         # Crear y agregar 
         note = Note(hit_time = int(round(hit_time)), duration = int(round(duration)), direction = direction)
         section.notes.append(note)
@@ -67,22 +59,3 @@ class NoteEditorController:
     def remove_last_note(self, section: "Section") -> Note:
         """Elimina la última nota colocada en una sección"""
         return section.notes.pop()
-    
-    def add_ghost_note(self, direction: "NoteDirection") -> None:
-        """Activa una nota fantasma al presionar la tecla."""
-        self.ghost_notes[direction] = True
-
-    def remove_ghost_note(self, direction: "NoteDirection") -> None:
-        """Elimina la nota fantasma al soltar la tecla."""
-        self.ghost_notes[direction] = False
-
-    def draw_ghost_notes(self, surface: Surface, hit_line_xs, hit_line_y, colors) -> None:
-        for direction, active in self.ghost_notes.items():
-            if not active: continue
-
-            x = hit_line_xs[direction]
-            y = hit_line_y
-            color = colors[direction]
-            radius = 20
-            draw.circle(surface, color, (x, y), radius)
-            draw.circle(surface, (255, 255, 255), (x, y), radius, 2)
