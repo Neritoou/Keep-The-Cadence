@@ -1,4 +1,7 @@
 from typing import TYPE_CHECKING
+from ...core.types import NoteDirection
+from ...constants import NOTE_SIZE_MULTIPLIER
+from pygame import transform
 
 if TYPE_CHECKING:
     from ..note_library import NoteSurfaces
@@ -7,11 +10,16 @@ if TYPE_CHECKING:
 def _load_notes(rm: "ResourceManager") -> None:
     """Registra las notas del juego."""
     notes_sheet = rm.get_spritesheet("NotesType") 
-
-    for col in range(0, 3):
+    for direction in NoteDirection:
         
-        frames = notes_sheet.get_frames_at_col(col)
-        notes: NoteSurfaces = {
+        frames = notes_sheet.get_frames_at_col(direction,True)
+        for i, frame in enumerate(frames):
+            width, height = frame.get_size()
+            width *= NOTE_SIZE_MULTIPLIER; height *= NOTE_SIZE_MULTIPLIER
+            frame = transform.smoothscale(frame, (int(width), int(height)))
+            frames[i] = frame
+
+        surfaces: NoteSurfaces = {
             "missed": frames[0],
             "default": frames[1],
             "spawned": frames[2],
@@ -21,6 +29,6 @@ def _load_notes(rm: "ResourceManager") -> None:
         }
 
         particles_sheet = rm.get_spritesheet("ParticlesType")
-        particles = particles_sheet.get_frames_at_col(col)
+        particles = particles_sheet.get_frames_at_col(direction,True)
 
-        rm.load_note(col, notes, particles)
+        rm.load_note(direction, surfaces, particles)
