@@ -1,12 +1,11 @@
 import pygame
-#from ..constants import MAX_DT_PER_UPDATE_ANIMATION
-MAX_DT_PER_UPDATE_ANIMATION = 0.1
+from ..constants import MAX_DT_PER_UPDATE_ANIMATION
 
 class Animation:
     """
     Maneja animaciones basadas en sprites utilizando superficies de Pygame.
     
-    Attributes:
+    Args:
         animations (dict[str, list[pygame.Surface]]): Diccionario nombre -> frames
         fps_map (dict[str, int]): FPS específico por animación
         current_animation (str): Nombre de la animación activa
@@ -141,7 +140,7 @@ class Animation:
                     self.playing = False
                     break
 
-    def draw(self, surface: pygame.Surface, position):
+    def draw(self, surface: pygame.Surface, position: tuple[int,int]):
         """
         Dibuja el frame actual en una posición determinada.
 
@@ -151,7 +150,7 @@ class Animation:
         """
         surface.blit(self.frames[self.frame_index], position)
 
-    def draw_centered(self, surface: pygame.Surface, center):
+    def draw_centered(self, surface: pygame.Surface, center: tuple[int,int]):
         """
         Dibuja el frame actual centrado en un punto.
 
