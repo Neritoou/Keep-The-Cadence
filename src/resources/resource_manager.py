@@ -7,7 +7,7 @@ from .types import *
 
 if TYPE_CHECKING:
     from .types import AudioCategory
-    from ..core.types import NoteData, NoteSurfaces, NoteDataType
+    from ..core.types import NoteData, NoteSurfaces, NoteDataType, NoteDirection
 
 T = TypeVar("T")
 K = TypeVar("K")
@@ -71,7 +71,7 @@ class ResourceManager:
     def get_music_paths(self) -> dict[str, MusicResource]:
         return self._musics
 
-    def get_note(self, direction: int) -> "NoteData":
+    def get_note(self, direction: "NoteDirection") -> "NoteData":
         """Obtiene una nota registrada en la biblioteca."""
         return self._note_library.get_note(direction)
     
@@ -150,7 +150,7 @@ class ResourceManager:
         self._spritesheets[key] = {"path": path, "spritesheet": SpriteSheet(image,frame_size,padding)}
         self._loaded_paths[path] = key
 
-    def load_note(self, direction: int, notes: "NoteSurfaces", particles: list[pygame.Surface]) -> None:
+    def load_note(self, direction: "NoteDirection", notes: "NoteSurfaces", particles: list[pygame.Surface]) -> None:
         """Registra una nota en la biblioteca interna."""
         self._note_library.register_note(direction, notes, particles)
 

@@ -1,6 +1,11 @@
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .types import NoteDirection
+
 class Note:
     """Representa una nota individual en el juego y el editor."""
-    def __init__(self, hit_time: float, duration: float, direction: int):
+    def __init__(self, hit_time: float, duration: float, direction: "NoteDirection"):
         """
         asd
 
