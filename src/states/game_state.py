@@ -28,6 +28,10 @@ class GameState(ABC):
         """
         pass
 
+    def on_resume(self) -> None:
+        """Llamado cuando un overlay encima es removido y este estado vuelve al tope."""
+        pass
+
     @abstractmethod
     def on_exit(self) -> None:
         """

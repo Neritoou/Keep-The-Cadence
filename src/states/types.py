@@ -1,8 +1,9 @@
 from enum import Enum, auto
 
 class StateID(Enum):
-    PLAY = auto()
     MENU = auto()
+    PLAY = auto()
+    PAUSE = auto()
     CHART_CREATOR = auto()
     CHART_SETUP = auto()
     # Más estados
