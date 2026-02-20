@@ -17,17 +17,16 @@ class MenuState(GameState):
 
         options_list =[
             ("JUGAR", self._on_play),
-            ("OPCIONES", self._on_config),
+            ("EDITOR DE CHART", self._on_editor),
             ("CREDITOS", self._on_credits),
             ("SALIR", self._on_exit)
         ]
         screen_center_w = SCREEN_SIZE[0] // 2
 
-        self.font1 = self.game.resources.get_font("Estandar", 100)
+        self.font1 = self.game.resources.get_font("Cursive", 130)
         self.font2 = self.game.resources.get_font("Estandar", 48)
 
-        self.title = UILabel("game_title", screen_center_w, 120, "KEEP THE CADENCE", self.font1, COLORS["coral_pastel"])
-        self.title.center_at(screen_center_w)
+        self.title = UILabel("game_title", screen_center_w, 120, "Keep The Cadence", self.font1, "#8fd2d2")
 
         self.menu = UIMenu(
             "main_menu", screen_center_w, 330, options_list,
@@ -48,7 +47,7 @@ class MenuState(GameState):
         self.ui.update(dt)
 
     def render(self, surface: pygame.Surface) -> None:
-        surface.fill((0, 0, 0))
+        surface.fill("#c09898")
         self.ui.render(surface)
 
     def handle_input(self, events: list[pygame.event.Event]) -> None:
@@ -73,12 +72,12 @@ class MenuState(GameState):
     
 
 
-    # Callbacks
+    # --- Callbacks ---
     def _on_play(self):
-        self.game.state.change(StateID.CHART_SETUP)
+        self.game.state.change(StateID.PLAY, song_folder="Aishite")
     
-    def _on_config(self):
-        print("ESCENA DE CONFIGURACIONES")
+    def _on_editor(self):
+        self.game.state.change(StateID.CHART_SETUP)
 
     def _on_credits(self):
         print("ESCENA DE CREDITOS")
