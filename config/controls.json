@@ -1,14 +1,13 @@
 {
     "play": {
-        "move_left": ["a", "LEFT"],
-        "move_right": ["d", "RIGHT"],
-        "move_down": ["s", "DOWN"],
-        "rotate_piece_right": ["e", "UP"],
-        "rotate_piece_left": ["q"],
-        "hard_drop": ["SPACE"]
+        "left": ["a", "LEFT"],
+        "right": ["d", "RIGHT"],
+        "down": ["s", "DOWN"],
+        "up": ["w", "UP"]
     },
     "ui": {
         "select": ["RETURN"],
+        "pause": ["p", "SPACE"],
         "down": ["s", "DOWN"],
         "up": ["w", "UP"]
     }

@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..core.game import Game
-    from ..core import OverlayType
+    from .types import OverlayType
     import pygame
 
 class GameState(ABC):
@@ -26,6 +26,10 @@ class GameState(ABC):
         Método llamado cuando el estado se entra (cuando el juego cambia a este estado).
         Se pueden inicializar recursos o preparar el estado.
         """
+        pass
+
+    def on_resume(self) -> None:
+        """Llamado cuando un overlay encima es removido y este estado vuelve al tope."""
         pass
 
     @abstractmethod

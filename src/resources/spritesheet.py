@@ -18,34 +18,43 @@ class SpriteSheet:
         self._rows = self._h // (self._fh + 2 * self._padding_h)
 
     
-    def get_frame_at(self, row: int, col: int) -> pygame.Surface:
+    def get_frame_at(self, row: int, col: int, trim: bool = False) -> pygame.Surface:
         self._assert_valid_row(row)
         self._assert_valid_col(col)
 
         x = col * (self._fw + 2 * self._padding_w) + self._padding_w
         y = row * (self._fh + 2 * self._padding_h) + self._padding_h
+        frame = self._image.subsurface(x, y, self._fw, self._fh)
 
-        return self._image.subsurface((x, y, self._fw, self._fh))
+        return self._trim_surface(frame) if trim else frame
 
-    def get_frames_at_row(self, row: int) -> list[pygame.Surface]:
+    def get_frames_at_row(self, row: int, trim: bool = False) -> list[pygame.Surface]:
         self._assert_valid_row(row)
         frames = []
         for col in range(self._cols):
             x = col * (self._fw + 2 * self._padding_w) + self._padding_w
             y = row * (self._fh + 2 * self._padding_h) + self._padding_h
-            frames.append(self._image.subsurface((x, y, self._fw, self._fh)))
+            frame = self._image.subsurface((x, y, self._fw, self._fh))
+
+            frames.append(self._trim_surface(frame) if trim else frame)
+
         return frames
 
-
-    def get_frames_at_col(self, col: int) -> list[pygame.Surface]:
+    def get_frames_at_col(self, col: int, trim: bool = False) -> list[pygame.Surface]:
         self._assert_valid_col(col)
         frames = []
         for row in range(self._rows):
             x = col * (self._fw + 2 * self._padding_w) + self._padding_w
             y = row * (self._fh + 2 * self._padding_h) + self._padding_h
-            frames.append(self._image.subsurface((x, y, self._fw, self._fh)))
+            frame = self._image.subsurface((x, y, self._fw, self._fh))
+            
+            frames.append(self._trim_surface(frame) if trim else frame)
+            
         return frames
 
+    def _trim_surface(self, surface: pygame.Surface) -> pygame.Surface:
+        rect = surface.get_bounding_rect()
+        return surface.subsurface(rect).copy()
 
     def _assert_valid_row(self, row: int) -> None:
         if row < 0 or row >= self._rows:

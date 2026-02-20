@@ -1,8 +1,13 @@
 import pygame
-from typing import TypeVar
+from typing import TypeVar, TYPE_CHECKING
 from .spritesheet import SpriteSheet
+from .note_library import NoteLibrary
 from .loaders import *
 from .types import *
+
+if TYPE_CHECKING:
+    from .types import AudioCategory
+    from ..core.types import NoteData, NoteSurfaces, NoteDataType, NoteDirection
 
 T = TypeVar("T")
 K = TypeVar("K")
@@ -13,11 +18,13 @@ class ResourceManager:
         """Inicializa los contenedores de recursos vacíos."""
         self._images: dict[str, ImageResource] = {}
         self._fonts: dict[str, FontResource] = {}
-        self._sounds: dict[str, SoundResource] = {}
+        self._sounds: dict[AudioCategory, dict[str, SoundResource]] = {}
+        self._musics: dict[str, MusicResource] = {}
         self._spritesheets: dict[str, SpriteSheetResource] = {}
+        
+        self._note_library: NoteLibrary = NoteLibrary()
 
         self._loaded_paths: dict[str, str] = {}
-
 
 
     # --- GETTERS ---
@@ -25,22 +32,53 @@ class ResourceManager:
         """Obtiene una imagen cargada."""
         resource = self._get_resource(self._images, key, "Image")
         return resource["surface"]
+    
+    def get_images(self) -> dict[str, ImageResource]:
+        return self._images
 
-    def get_sound(self, key: str) -> pygame.mixer.Sound:
+    def get_sound(self, key: str, category: AudioCategory) -> pygame.mixer.Sound:
         """Obtiene un sonido cargado."""
-        resource = self._get_resource(self._sounds, key, "Sound")
-        return resource["sound"]
+        resource = self._get_resource(self._sounds, category, "Sound")
+        if key not in resource:
+            raise ValueError(f"ResourceManager: sound {key} no está cargada en la categoria {category}")
+        return resource[key]["sound"]
+
+    def get_sounds(self) -> dict[AudioCategory, dict[str, SoundResource]]:
+        return self._sounds
 
     def get_font(self, key: str, size: int) -> pygame.font.Font:
         """Obtiene una fuente cargada."""
         resource = self._get_resource(self._fonts, key, "Font")
+        if size not in resource["font"]:
+            raise ValueError(f"ResourceManager: font {key} de tamaño {size} no está cargada")
         return resource["font"][size]
     
+    def get_fonts(self) -> dict[str, FontResource]:
+        return self._fonts
+
     def get_spritesheet(self, key: str) -> SpriteSheet:
         """Obtiene una hoja de sprites cargada."""
         resource = self._get_resource(self._spritesheets, key, "SpriteSheet")
         return resource["spritesheet"]
     
+    def get_spritesheets(self) -> dict[str, SpriteSheetResource]:
+        return self._spritesheets
+    
+    def get_music_path(self, key: str) -> str:
+        resource = self._get_resource(self._musics,key, "Music")
+        return resource["path"]
+    
+    def get_music_paths(self) -> dict[str, MusicResource]:
+        return self._musics
+
+    def get_note(self, direction: "NoteDirection") -> "NoteData":
+        """Obtiene una nota registrada en la biblioteca."""
+        return self._note_library.get_note(direction)
+    
+    def get_all_notes(self) -> "NoteDataType":
+        """Obtiene un diccionario de todas las notas registradas."""
+        return self._note_library.notes
+
 
     # --- LOADERS ---
     def load_image(self, key: str, path: str) -> None:
@@ -55,16 +93,29 @@ class ResourceManager:
         self._images[key] = {"path": path, "surface": img.convert_alpha() if img.get_alpha() else img.convert()}
         self._loaded_paths[path] = key
         
-    def load_sound(self, key: str, path: str) -> None:
+    def load_sound(self, key: str, category: AudioCategory, path: str) -> None:
         """Carga y almacena un sonido."""
+        # Si la categoria no se ha añadido, se añade
+        if category not in self._sounds:
+            self._sounds[category] = {}
+
         # Si el recurso ya existe, no se crea nuevamente
-        if key in self._sounds:
-            if self._sounds[key]["path"] == path:
+        if key in self._sounds[category]:
+            if key in self._sounds[category][key]["path"] == path:
                 return
-            raise ValueError(f"Resource Manager: Sound '{key}' ya tiene asociado un path distinto: '{self._sounds[key]['path']}'")
+            raise ValueError(f"Resource Manager: Sound '{category}' '{key}' ya tiene asociado un path distinto: '{self._sounds[category][key]['path']}'")
         
         self._assert_path_unused(path)
-        self._sounds[key] = {"path": path, "sound": pygame.mixer.Sound(path)}
+        self._sounds[category][key] = {"path": path, "sound": pygame.mixer.Sound(path)}
+        self._loaded_paths[path] = key
+
+    def load_music_path(self, key: str, path: str):
+        if key in self._musics:
+            if self._musics[key]["path"] == path:
+                return
+            raise ValueError(f"Resource Manager: Music '{key}' ya tiene asociado un path distinto: '{self._musics[key]['path']}'")
+        self._assert_path_unused(path)
+        self._musics[key] = {"path": path}
         self._loaded_paths[path] = key
 
     def load_font(self, key: str, path: str, sizes: set[int]) -> None:
@@ -99,6 +150,10 @@ class ResourceManager:
         self._spritesheets[key] = {"path": path, "spritesheet": SpriteSheet(image,frame_size,padding)}
         self._loaded_paths[path] = key
 
+    def load_note(self, direction: "NoteDirection", notes: "NoteSurfaces", particles: list[pygame.Surface]) -> None:
+        """Registra una nota en la biblioteca interna."""
+        self._note_library.register_note(direction, notes, particles)
+
 
     # --- UNLOADERS ---
     def unload_image(self, key: str) -> None:
@@ -108,12 +163,23 @@ class ResourceManager:
         self._loaded_paths.pop(self._images[key]["path"], None)
         self._images.pop(key)
 
-    def unload_sound(self, key: str) -> None:
+    def unload_sound(self, key: str, category: AudioCategory) -> None:
         """Elimina un sonido del Diccionario"""
-        if key not in self._sounds:
+        if category not in self._sounds:
+            raise ValueError(f"ResourceManager: sound {key} no está cargada en la categoria {category}")
+
+        if key not in self._sounds[category]:
             return
-        self._loaded_paths.pop(self._sounds[key]["path"], None)
-        self._sounds.pop(key)
+        self._loaded_paths.pop(self._sounds[category][key]["path"], None)
+        self._sounds[category].pop(key)
+
+    def unload_music_path(self, key: str) -> None:
+        if key not in self._musics:
+            return
+        self._loaded_paths.pop(self._musics[key]["path"], None)
+        self._musics.pop(key)
+
+
 
     def unload_font(self, key: str) -> None:
         """Elimina una fuente del Diccionario"""
@@ -129,7 +195,6 @@ class ResourceManager:
         self._loaded_paths.pop(self._spritesheets[key]["path"], None)
         self._spritesheets.pop(key)
         
-
    
     # --- CARGA GLOBAL DE RECURSOS ---
     def load(self):
@@ -138,8 +203,9 @@ class ResourceManager:
         _load_images(self)
         _load_fonts(self)
         _load_sounds(self)
-
-
+        _load_music_paths(self)
+        _load_notes(self)
+    
 
     # --- HELPERS ---
     def _get_resource(self, container: dict[K, T], key: K, resource_type: str) -> T:

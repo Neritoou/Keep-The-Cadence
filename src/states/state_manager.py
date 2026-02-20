@@ -1,8 +1,10 @@
-from ..core.types import OverlayType
 from typing import Type, TYPE_CHECKING
-from .state_id import StateID
+from .types import StateID, OverlayType
 from .play_state import PlayState
 from .menu_state import MenuState
+from .pause_state import PauseState
+from .chart_creator_state import ChartCreatorState
+from .chart_setup_state import ChartSetupState
 import pygame
 
 if TYPE_CHECKING:
@@ -18,8 +20,11 @@ class StateManager:
         self.game = game
         # El diccionario mapea StateID con las clases correspondientes
         self._state_classes: dict[StateID, Type["GameState"]] = {
-            StateID.PLAY: PlayState,
             StateID.MENU: MenuState,
+            StateID.PLAY: PlayState,
+            StateID.PAUSE: PauseState,
+            StateID.CHART_CREATOR: ChartCreatorState,
+            StateID.CHART_SETUP: ChartSetupState
         }
 
     @property
@@ -58,6 +63,9 @@ class StateManager:
         """ Elimina el estado superior y llama a on_exit. """
         self.current.on_exit()
         self.stack.pop()
+
+        if self.stack:
+            self.stack[-1].on_resume()
 
     def _push(self, state: "GameState") -> None:
         """ Agrega un estado al stack y llama a on_enter. """
