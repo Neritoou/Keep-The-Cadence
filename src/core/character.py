@@ -2,7 +2,6 @@ from pygame import Surface
 from ..resources import Animation
 from .types import NoteDirection
 from .receptor_state import ReceptorState, ReceptorFSM
-from ..constants import MAX_SING_DURATION
 
 class Character:
     """
@@ -26,6 +25,8 @@ class Character:
 
         self.position = position
         self.bpm = bpm
+        self._beat_timer = 0.0
+        self._ms_per_beat = 60000.0 / bpm
         self.receptor = ReceptorFSM()
 
         self.animator = Animation(
@@ -37,12 +38,15 @@ class Character:
 
         # Duración mínima de la animación de canto antes de volver a idle.
         self._sing_duration = 0.0
-        self._recalculate_timing()
 
-    # (!) CAMBIAR POSTERIORMENTE A SINCRONIZACIÓN CON BEAT DE LA CANCIÓN
+    @property
+    def sing_duration(self) -> float:
+        return self._sing_duration
+
     def _recalculate_timing(self) -> None:
-        """Recalcula duraciones dependientes del BPM."""
-        self._sing_duration = MAX_SING_DURATION
+        self._ms_per_beat = 60000.0 / self.bpm
+        self._sing_duration = (60.0 / self.bpm)       
+        self._beat_timer = 0.0  # resetear al cambiar BPM
 
     def update_bpm(self, value: float) -> None:
         """Actualiza BPM del personaje (no cambia FPS)."""
@@ -52,8 +56,8 @@ class Character:
     # --- INPUT ---
     def press_hit(self, direction: NoteDirection) -> None:
         """Notifica al personaje que se acertó una nota."""
-        self.receptor.state = ReceptorState.HOLD_HIT
         self.receptor.direction = direction
+        self.receptor.state = ReceptorState.HOLD_HIT
         self.receptor.timer = 0.0
 
     def press_miss(self, direction: NoteDirection) -> None:
@@ -75,7 +79,7 @@ class Character:
 
     # --- UPDATE ---
     def update(self, dt: float) -> None:
-        """Actualiza la FSM y la animación del personaje."""
+        """Actualiza la FSM y la animación del personaje."""        
         match self.receptor.state:
             case ReceptorState.IDLE:
                 self._update_idle(dt)
@@ -88,8 +92,10 @@ class Character:
             case ReceptorState.RELEASE_MISS:
                 self._update_release_miss(dt)
 
-    def _update_idle(self,dt:float) -> None:
-        if self.animator.get_current_animation_name() != "idle":
+    def _update_idle(self, dt: float) -> None:
+        self._beat_timer += dt * 1000
+        if self._beat_timer >= self._ms_per_beat:
+            self._beat_timer -= self._ms_per_beat
             self.animator.play("idle", reset=True, loop=True)
 
         self.animator.update(dt)
@@ -141,6 +147,7 @@ class Character:
         self.receptor.state = ReceptorState.IDLE
         self.receptor.direction = None
         self.receptor.timer = 0.0
+        self._beat_timer = 0.0  # Empieza a contar desde el momento que vuelve a idle
         self.animator.play("idle", reset=True, loop=True)
 
     # --- DIBUJAR PERSONAJE ---
