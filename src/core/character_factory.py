@@ -22,7 +22,9 @@ class CharacterFactory:
         
         # IDLE
         animations["idle"] = rm.get_spritesheet("MIKU_IDLE").get_frames_at_row(0,True)
-        
+        # HEY
+        animations["hey"] = rm.get_spritesheet("MIKU_HEY").get_frames_at_row(0,True)
+
         # SING DIRECTIONS
         directions_sheet = rm.get_spritesheet("MIKU_DIRECTIONS")
         miss_sheet = rm.get_spritesheet("MIKU_MISS_DIRECTIONS")
