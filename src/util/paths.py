@@ -56,7 +56,7 @@ def get_full_song_path(folder_name: str) -> Path:
     return path 
 
 def get_voices_path(folder_name: str) -> Path:
-    path = _get_folder_path(folder_name) / "voices.ogg"
+    path = _get_folder_path(folder_name) / "voice.ogg"
     if not path.is_file():
         raise FileNotFoundError(f"Paths: Voices en el folder {folder_name} no encontrado o inválido en la Ruta:\n{path}")
     return path 
