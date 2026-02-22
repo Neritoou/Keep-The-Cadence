@@ -51,6 +51,8 @@ class PauseState(GameState):
             self.menu.move_down()
         elif self.game.input.is_action_pressed("ui", "select"):
             self.menu.execute_selected()
+        elif  self.game.input.is_action_pressed("ui", "pause"):
+            self._on_resume()
     
     def update(self, dt: float) -> None:
         """Actualiza el menú de pausa."""
