@@ -5,6 +5,10 @@ from ..controller import InputManager
 from ..audio import AudioManager
 from ..states import *
 from ..config import *
+from ..core.character_factory import CharacterFactory
+from ..core.types import NoteDirection, ScrollDirection
+from ..core.note_renderer import NoteRenderer
+from ..constants import HIT_LINE_XS, HIT_LINE_Y_UP, SPAWN_TIME_MS, MISS_DISPLAY
 
 class Game(GameBase):
     def __init__(self, metadata: GameMetadata) -> None:
@@ -22,6 +26,20 @@ class Game(GameBase):
         # Cargar Recursos
         self.resources.load()
         self.audio.register_sounds(self.resources.get_sounds())
+
+        self.character = CharacterFactory.create_miku(self.resources,(1050,400))
+
+        self.note_renderer = NoteRenderer(
+            self.resources.get_all_notes(), HIT_LINE_XS, HIT_LINE_Y_UP,
+            ScrollDirection.UP, SPAWN_TIME_MS, MISS_DISPLAY, 720
+        )
+        self._PLAY_ACTIONS: list[tuple[str, NoteDirection]] = [
+            ("left",  NoteDirection.LEFT),
+            ("down",  NoteDirection.DOWN),
+            ("up",    NoteDirection.UP),
+            ("right", NoteDirection.RIGHT),
+        ]
+
 
         # Estado inicial  
         self.state.change(StateID.MENU)
