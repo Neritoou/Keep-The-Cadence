@@ -1,16 +1,4 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from ..note import Note
-
-@dataclass
-class Section:
-    """Representa una sección del chart"""
-    index: int
-    start_time: float  # ms
-    end_time: float | None # ms, None si está abierta
-    notes: "list[Note]"
 
 @dataclass
 class EditorKeyState:
