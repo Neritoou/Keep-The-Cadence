@@ -1,8 +1,10 @@
+from ..core.types import Judgement
+
 BASE_PIXELS_PER_MS = 0.45
 SPAWN_TIME_MS = 2000
 MAX_DT_PER_UPDATE_ANIMATION = 0.1
 MIN_HOLD_DURATION_MS = 500  # Duración mínima en ms que consideras válida
-MAX_SING_DURATION = 0.35 # Duración máxima para cantar despues de soltar el INPUT en segundos
+MISS_DISPLAY = 0.25 # EN SEGUNDOS
 
 # DATOS DE LAS NOTAS 
 NOTE_SIZE_MULTIPLIER = 0.6
@@ -16,6 +18,16 @@ PARTICLE_SPLASH_PADDING = (10,10)
 
 NOTE_SIZE = (229,228)
 NOTE_PADDING = (5,5)
+
+JUDGEMENT_WINDOWS: list[tuple[float, Judgement]] = [
+    (45,  Judgement.PERFECT),
+    (90,  Judgement.GOOD),
+    (135, Judgement.BAD),
+]
+
+# Ventana total de hit en ms (±135ms alrededor del hit_time)
+HIT_WINDOW_MS: float = 135.0
+HOLD_END_WINDOW_MS: float = 100.0
 
 SCROLL_SPEEDS = {
     "EASY": 0.75,
