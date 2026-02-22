@@ -15,7 +15,7 @@ class NoteRenderer:
     """
     def __init__(self, notes_data: "NoteDataType", hit_line_xs: tuple[int,int,int,int],
                  hit_line_y: int, scroll_direction: "ScrollDirection", 
-                 spawn_time_ms: float, screen_height: int
+                 spawn_time_ms: float, miss_display_ms: float, screen_height: int
                 ):
         """
         Args:
@@ -32,6 +32,7 @@ class NoteRenderer:
         self.scroll_direction = scroll_direction
         self.screen_height = screen_height
         self.spawn_time_ms = spawn_time_ms
+        self._miss_display_ms = miss_display_ms
         
         # Una FSM por dirección para controlar el estado visual del receptor
         self.receptors: "dict[NoteDirection, ReceptorFSM]" = {
@@ -48,11 +49,14 @@ class NoteRenderer:
     # --- INPUT ---
     def press_hit(self, direction: "NoteDirection") -> None:
         """Notifica al receptor que se presionó una tecla con hit correcto."""
-        self.receptors[direction].state = ReceptorState.HOLD_HIT
+        fsm = self.receptors[direction]
+        fsm.state = ReceptorState.HOLD_HIT
 
     def press_miss(self, direction: "NoteDirection") -> None:
         """Notifica al receptor que se presionó una tecla con miss."""
-        self.receptors[direction].state = ReceptorState.HOLD_MISS
+        fsm = self.receptors[direction]
+        fsm.state = ReceptorState.HOLD_MISS
+        fsm.timer = 0.0  # ← resetear timer al entrar en miss
 
     def release_key(self, direction: "NoteDirection") -> None:
         """Notifica al receptor que se soltó una tecla."""
@@ -92,11 +96,11 @@ class NoteRenderer:
                 case ReceptorState.HOLD_HIT:
                     self._update_hold_hit(anim)
                 case ReceptorState.HOLD_MISS:
-                    self._update_hold_miss(anim)
+                    self._update_hold_miss(anim, dt)
                 case ReceptorState.RELEASE_HIT:
                     self._update_release_hit(direction, anim, dt)
                 case ReceptorState.RELEASE_MISS:
-                    self._update_release_miss(direction)
+                    self._update_release_miss(direction, anim, dt)
 
     def _update_idle(self, anim: Animation, dt: float) -> None:
         """IDLE: Muestra imagen static"""
@@ -113,10 +117,11 @@ class NoteRenderer:
         anim.go_to_frame(0)
         anim.pause()
 
-    def _update_hold_miss(self, anim: Animation) -> None:
+    def _update_hold_miss(self, anim: Animation, dt: float) -> None:
         """HOLD_MISS: Muestra imagen miss estática mientras se mantiene la tecla"""
         if anim.get_current_animation_name() != "miss":
             anim.play("miss", reset=True, loop=False)
+        anim.update(dt)
 
     def _update_release_hit(self, direction: "NoteDirection", anim: Animation, dt: float) -> None:
         """RELEASE_HIT: Reproduce confirm desde donde quedó congelado hasta el final"""
@@ -130,9 +135,15 @@ class NoteRenderer:
         if anim.is_last_frame() and not anim.is_playing():
             self._go_idle(direction)
 
-    def _update_release_miss(self, direction: "NoteDirection") -> None:
+    def _update_release_miss(self, direction: "NoteDirection", anim: Animation, dt: float) -> None:
         """RELEASE_MISS: Vuelve a static inmediatamente"""
-        self._go_idle(direction)
+        fsm = self.receptors[direction]
+        if anim.get_current_animation_name() != "miss":
+            anim.play("miss", reset=True, loop=False)
+        anim.update(dt)
+        fsm.timer += dt
+        if fsm.timer >= self._miss_display_ms:
+            self._go_idle(direction)
 
     def _go_idle(self, direction: "NoteDirection") -> None:
         self.receptors[direction].state = ReceptorState.IDLE
