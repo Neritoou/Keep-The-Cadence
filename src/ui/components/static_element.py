@@ -27,7 +27,7 @@ class UIStatic(UIElement):
         
         width, height = self.img.get_size()
 
-        super().__init__(name, x, y, width, height, visible=visible, enabled=False,
+        super().__init__(name, x, y, width, height, visible=visible,
                          alpha=alpha, scale=scale, angle=angle)
 
 
