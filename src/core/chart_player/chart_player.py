@@ -89,6 +89,9 @@ class ChartPlayer:
         self.audio.play_music(self._inst_path, loops=0, start=start_time / 1000)
         self._voice_channel = self._voice_sound.play()
 
+        if self._is_voice_muted and self._voice_channel:
+            self._voice_channel.set_volume(0.0)
+
         self.current_time = start_time
         self._start_tick = pygame.time.get_ticks() - int(start_time)
         self._playing = True
@@ -117,20 +120,24 @@ class ChartPlayer:
         self._playing = True
 
     def stop(self) -> None:
-        """
-        Detiene completamente la reproducción y resetea el estado interno.
-        Resetea también el chart para que pueda volver a reproducirse desde cero.
-        """
+        """Detiene completamente la reproducción y audio del estado interno."""
         self.audio.stop_music()
 
         if self._voice_channel:
             self._voice_channel.stop()
             self._voice_channel = None
+   
+        self._playing = False
+
+    def reset(self) -> None:
+        """Resetea el chart al estado inicial para poder volver a reproducirlo."""
+        if self._is_voice_muted:
+            self.unmute_voices()
 
         self.chart.reset()
-        self._playing = False
         self.current_time = 0.0
         self._active_notes.clear()
+        
 
     def cleanup(self) -> None:
         """
