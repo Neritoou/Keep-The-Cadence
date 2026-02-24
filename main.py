@@ -8,7 +8,7 @@ if not pygame.get_init():
 meta = GameMetadata(
                 title="Keep The Cadence",
                 description="Juego de Ritmo inspirado en Friday Night Funkin.",
-                authors=["Odett Sayegh", "Agostinho Dos Santos"],
+                authors=["Odett Sayegh", "Agostinho Dos Santos", "Angel Ramirez"],
                 group_number=4
             )
 
