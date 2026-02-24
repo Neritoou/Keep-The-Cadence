@@ -1,13 +1,13 @@
-from .types import NoteDirection
-from .note import Note
 from typing import TYPE_CHECKING
-from .note import NoteState
 from random import choice
+
+from .types import NoteDirection, Judgement
+from .note import Note
+from .note import NoteState
+from .scoring import ScoreManager
 from ..constants import HOLD_END_WINDOW_MS
 
 if TYPE_CHECKING:
-    from .types import NoteDirection
-    from .note import Note
     from .note_renderer import NoteRenderer
     from .character import Character
     from .chart_player import ChartPlayer
@@ -23,8 +23,11 @@ class NoteInputHandler:
         renderer: Renderer de notas para actualizar el estado visual de los receptores.
         character: Personaje jugable para disparar animaciones de hit/miss.
     """
-    def __init__(self, player: "ChartPlayer", renderer: "NoteRenderer", 
-                 character: "Character", miss_sounds: "tuple[Sound, ...]"):
+    def __init__(
+            self, player: "ChartPlayer", renderer: "NoteRenderer", 
+            character: "Character", miss_sounds: "tuple[Sound, ...]",
+            score_manager: ScoreManager
+            ):
         """
         Args:
             player: ChartPlayer en curso.
@@ -43,6 +46,8 @@ class NoteInputHandler:
         # Holds que se perdieron (sin presionar o drop) pero siguen
         # visibles en pantalla hasta que llegan a su end_time
         self._missed_holds: "dict[NoteDirection, Note | None]" = {d: None for d in NoteDirection}
+
+        self._score = score_manager
 
     # --- INPUT PÚBLICO ---
     def on_key_press(self, direction: "NoteDirection") -> None:
@@ -77,7 +82,7 @@ class NoteInputHandler:
             self.renderer.release_key(direction)
             self.character.release_key(direction)
             return
-
+        
         time_remaining = note.end_time - self.player.current_time
 
         if time_remaining > HOLD_END_WINDOW_MS:
@@ -101,6 +106,8 @@ class NoteInputHandler:
             self.player.mute_voices()
             self._play_miss_sound()
 
+            self._score.register_tap(Judgement.MISS)
+
             if note.is_hold_note:
                 # La hold sigue visible hasta su end_time para mostrar cuánto faltaba
                 self._missed_holds[note.direction] = note
@@ -123,6 +130,8 @@ class NoteInputHandler:
         """
         judgement = note.get_judgement(self.player.current_time)
         note.on_hit()  # PENDING → ACTIVE (hold) | PENDING → COMPLETED (tap)
+        
+        self._score.register_tap(judgement)
 
         self.renderer.press_hit(direction)
         self.character.press_hit(direction)
@@ -145,6 +154,8 @@ class NoteInputHandler:
         self.renderer.press_miss(direction)
         self.character.press_miss(direction)
         self._play_miss_sound()
+        self._score.register_tap(Judgement.MISS)
+
         print(f"[GHOST] {direction.name}")
         
     def _handle_hold_drop(self, note: "Note", direction: "NoteDirection") -> None:
@@ -172,6 +183,9 @@ class NoteInputHandler:
         # TODO: enviar judgement al sistema de Score como hold drop
         print(f"[DROP] {direction.name} — {judgement.name}")
 
+        held_ratio = (self.player.current_time - note.hit_time) / note.duration
+        self._score.register_hold_release(max(0.0, min(1.0, held_ratio)))
+
     def _handle_hold_complete(self, note: "Note", direction: "NoteDirection") -> None:
         """
         Procesa una hold completada: el jugador soltó dentro del window final.
@@ -181,6 +195,9 @@ class NoteInputHandler:
             direction: Dirección de la hold.
         """
         note.on_completed()  # ACTIVE → COMPLETED
+
+        self._score.register_hold_release(1.0)
+
         self._held_notes[direction] = None
         self.character.release_key(direction)
         self.renderer.release_key(direction)
@@ -224,8 +241,11 @@ class NoteInputHandler:
         for direction in NoteDirection:
             # Hold activa: el jugador la sostuvo hasta el final
             note = self._held_notes[direction]
+
             if note is not None and current_time >= note.end_time:
                 note.on_completed()  # ACTIVE -> COMPLETED
+                self._score.register_hold_release(1.0)
+
                 self._held_notes[direction] = None
                 self.renderer.release_key(direction)
                 self.character.release_key(direction)
