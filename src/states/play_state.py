@@ -6,11 +6,12 @@ from .types import OverlayType, StateID
 from ..resources.types import AudioCategory
 
 from ..core.chart_player import ChartLoader, ChartPlayer
-from ..core.note_renderer import NoteRenderer
-from ..core.types import ScrollDirection, NoteDirection
 from ..core.note_input_handler import NoteInputHandler
+from ..core.scoring import ScoreManager
+from ..core.types import Judgement
 
-from ..constants import HIT_LINE_XS, HIT_LINE_Y_UP, SPAWN_TIME_MS, MISS_DISPLAY
+from ..constants import SPAWN_TIME_MS
+from ..ui import PerformanceBar, UILabel, UIManager
 
 if TYPE_CHECKING:
     from ..core.game import Game
@@ -29,32 +30,70 @@ class PlayState(GameState):
             for i in range(1, 4)
             )
 
-        self.note_input = NoteInputHandler(self.player,self.game.note_renderer,self.game.character,sounds)
+        self.score_manager = ScoreManager(self.chart.total_notes)
+        self.note_input = NoteInputHandler(
+            self.player, self.game.note_renderer, self.game.character, sounds,
+            self.score_manager
+            )
+
+        performance_icon = game.resources.get_spritesheet("PerformanceIcon")
+        self.performance_bar = PerformanceBar("performance_bar", 340, 600, 600, performance_icon)
+
+        font = game.resources.get_font("Estandar", 30)
+
+        self.score_label = UILabel("score_label", 675, 650, "SCORE: 0", font, "#808080")
+        self.misses_label = UILabel("misses_label", 870, 650, "|   MISSES: 0", font, "#808080")
+
+        self.ui: UIManager = UIManager()
+        self.ui.add_element(self.performance_bar)
+        self.ui.add_element(self.score_label)
+        self.ui.add_element(self.misses_label)
 
         # (!) Quitar cuando no se necesite el debug
         self.debug_font = pygame.font.Font(None, 24)
+
         self.game.character.update_bpm(self.chart.bpm)
+        self._transitioning = False
         self.player.play()
+
+    # (!) Ver donde se va a ubicar
+    def is_game_over(self) -> bool:
+        return self.score_manager.performance <= 0.00
 
     def on_enter(self) -> None:
         pass
 
     def on_exit(self) -> None:
         self.player.stop()
+        self.player.reset()
         self.player.cleanup()
     
     def on_resume(self) -> None:
         self.player.resume()
 
     def update(self, dt: float) -> None:
+        if self._transitioning:
+            return
+
         self.player.update(dt)
         self.game.note_renderer.update(dt)
         self.game.character.update(dt)
         self.note_input.update(dt)
 
+        self.performance_bar.set_performance(self.score_manager.performance_ratio)
+        self.score_label.set_text(f"SCORE: {self.score_manager.score}")
+        self.misses_label.set_text(f"|   MISSES: {self.score_manager.judgement_counts[Judgement.MISS]}")
+
+        self.ui.update(dt)
+
+        if self.is_game_over():
+            self._transitioning = True
+            self.game.state.change(StateID.GAME_OVER, final_score=self.score_manager.score, song_folder=self.song_folder)
+
         if self.player.is_finished:
-            self.game.state.change(StateID.MENU)
-            
+            self._transitioning = True
+            self.game.state.change(StateID.WIN, final_score=self.score_manager.score, song_folder=self.song_folder)
+    
     def handle_input(self, events: list[pygame.event.Event]) -> None:
         if self.game.input.is_action_pressed("ui", "pause"):
             self.player.pause()
@@ -70,6 +109,7 @@ class PlayState(GameState):
 
     def render(self, surface: pygame.Surface) -> None:
         surface.fill((20, 20, 40))
+
         # Notas en movimiento
         self.game.note_renderer.draw_notes(
             surface, self.player._active_notes,
@@ -79,6 +119,7 @@ class PlayState(GameState):
 
         self.game.note_renderer.draw_receptors(surface)
 
+        self.ui.render(surface)
 
         self.game.character.draw(surface)
         self._draw_debug_info(surface)
@@ -104,6 +145,10 @@ class PlayState(GameState):
             f"{section_info}",
             f"Estado: {'REPRODUCIENDO' if self.player.is_playing else 'PAUSADO'}",
             "",
+            f"Performance: {self.score_manager.performance:.1f}%",
+            f"Score: {self.score_manager.score}",
+            f"Combo: {self.score_manager.combo}",
+            "",
             "SPACE/p: Pausar",
         ]
         
@@ -112,6 +157,3 @@ class PlayState(GameState):
             text = self.debug_font.render(line, True, (255, 255, 255))
             surface.blit(text, (10, y))
             y += 25
-
- # --- INPUT ---
-
