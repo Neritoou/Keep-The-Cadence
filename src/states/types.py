@@ -4,6 +4,8 @@ class StateID(Enum):
     MENU = auto()
     PLAY = auto()
     PAUSE = auto()
+    GAME_OVER = auto()
+    WIN = auto()
     CHART_CREATOR = auto()
     CHART_SETUP = auto()
     # Más estados

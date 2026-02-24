@@ -1,8 +1,12 @@
 from typing import Type, TYPE_CHECKING
 from .types import StateID, OverlayType
+
 from .play_state import PlayState
 from .menu_state import MenuState
 from .pause_state import PauseState
+from .game_over_state import GameOverState
+from .win_state import WinState
+
 from .chart_creator_state import ChartCreatorState
 from .chart_setup_state import ChartSetupState
 import pygame
@@ -10,6 +14,7 @@ import pygame
 if TYPE_CHECKING:
     from ..core.game import Game
     from .game_state import GameState
+    from .win_state import WinState
 
 class StateManager:
     """
@@ -23,6 +28,8 @@ class StateManager:
             StateID.MENU: MenuState,
             StateID.PLAY: PlayState,
             StateID.PAUSE: PauseState,
+            StateID.GAME_OVER: GameOverState,
+            StateID.WIN: WinState,
             StateID.CHART_CREATOR: ChartCreatorState,
             StateID.CHART_SETUP: ChartSetupState
         }
