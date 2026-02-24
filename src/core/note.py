@@ -1,73 +1,95 @@
 from typing import TYPE_CHECKING
+from .types import Judgement
+from ..constants import HIT_WINDOW_MS, JUDGEMENT_WINDOWS
+from enum import Enum, auto
 
 if TYPE_CHECKING:
     from .types import NoteDirection
 
+class NoteState(Enum):
+    PENDING   = auto() 
+    ACTIVE    = auto() 
+    COMPLETED = auto() 
+    MISSED    = auto() 
+    
 class Note:
-    """Representa una nota individual en el juego y el editor."""
     def __init__(self, hit_time: float, duration: float, direction: "NoteDirection"):
-        """
-        asd
-
-        Args:
-            hit_time: Tiempo en ms cuando debe ser golpeada
-            duration: Duración en ms (para notas largas, 0 si no es larga)
-            direction: 0: up, 1: down, 2: left, 3: right
-        """
-        self.hit_time = hit_time
+        self.hit_time  = hit_time
         self.direction = direction
-        self.duration = duration 
-        
-    def __lt__(self, other: "Note"):
-        """Define como comparar las notas."""
+        self.duration  = duration
+        self.state     = NoteState.PENDING
+
+    def __lt__(self, other: "Note") -> bool:
         return self.hit_time < other.hit_time
+
+    # --- PROPIEDADES DE ESTADO ---
+
+    @property
+    def is_resolved(self) -> bool:
+        """Devuelve Verdadero si la notá fue completada o fallada."""
+        return self.state in (NoteState.COMPLETED, NoteState.MISSED)
+
+    @property
+    def was_hit(self) -> bool:
+        """La cabeza fue golpeada exitosamente. Útil para Score: 
+        una hold dropeada (MISSED) pudo haber sido golpeada primero."""
+        return self.state in (NoteState.ACTIVE, NoteState.COMPLETED)
 
     @property
     def end_time(self) -> float:
-        """Tiempo cuando termina una hold note"""
         return self.hit_time + self.duration
-        
+
     @property
     def is_hold_note(self) -> bool:
-        """¿Es una nota larga?"""
         return self.duration > 0
-    
-    def is_visible(self, current_time: float, spawn_time_ms: float) -> bool:
-        return (self.hit_time - spawn_time_ms <= current_time <= self.end_time)
 
-    def is_hittable(self, current_time: float, hit_window: float = 180) -> bool:
-        """
-        Verifica si la nota puede ser golpeada en el tiempo actual.
-        
-        Args:
-            current_time: Tiempo actual (ms)
-            hit_window: Ventana de tiempo válida (ms)
-            
-        Returns:
-            True si puede ser golpeada
-        """
-        time_diff = abs(self.hit_time - current_time)
-        return time_diff <= hit_window
-    
-    def get_hit_accuracy(self, hit_time: float) -> tuple[str, int]:
-        """
-        Calcula la precisión de un golpe.
-        
-        Args:
-            hit_time: Tiempo cuando el jugador golpeó (ms)
-            
-        Returns:
-            Tupla de (rating, puntos)
-        """
-        time_diff = abs(self.hit_time - hit_time)
-        
-        if time_diff <= 45:
-            return ("perfect", 350)
-        elif time_diff <= 90:
-            return ("good", 200)
-        elif time_diff <= 135:
-            return ("bad", 100)
-        elif time_diff <= 180:
-            return ("shit", 50)
-        else:
-            return ("miss", 0)
+    # --- TRANSICIONES ---
+
+    def on_hit(self) -> None:
+        self.state = NoteState.ACTIVE if self.is_hold_note else NoteState.COMPLETED
+
+    def on_completed(self) -> None:
+        self.state = NoteState.COMPLETED
+
+    def on_missed(self) -> None:
+        self.state = NoteState.MISSED
+
+    # --- VISIBILIDAD Y ACTIVIDAD ---
+
+    def is_visible(self, current_time: float, spawn_time_ms: float) -> bool:
+        """Rango visual: desde que spawna hasta que termina."""
+        return self.hit_time - spawn_time_ms <= current_time <= self.end_time
+
+    def is_active(self, current_time: float, spawn_time_ms: float) -> bool:
+        """Si la nota aún debe procesarse¿?"""
+        if current_time < self.hit_time - spawn_time_ms:
+            return False
+
+        if self.state == NoteState.COMPLETED:
+            return False
+
+        if self.state == NoteState.MISSED:
+            # Hold perdida: sigue visible hasta end_time
+            # Tap perdida: ya fue procesada por pop_missed_notes, fuera
+            return self.is_hold_note and current_time <= self.end_time
+
+        if self.state == NoteState.ACTIVE:
+            return current_time <= self.end_time
+
+        return True  # PENDING: permanece hasta ser resuelta
+
+    def is_hittable(self, current_time: float) -> bool:
+        """Devuelve verdadero si la nota debe procesar Input"""
+        return abs(self.hit_time - current_time) <= HIT_WINDOW_MS
+
+    def is_missed(self, current_time: float) -> bool:
+        """Ventana expirada sin que fuera tocada (solo PENDING)."""
+        return self.state == NoteState.PENDING and current_time >= self.hit_time + HIT_WINDOW_MS
+
+    # --- JUICIO ---
+    def get_judgement(self, current_time: float) -> Judgement:
+        diff = abs(self.hit_time - current_time)
+        for window, judgement in JUDGEMENT_WINDOWS:
+            if diff <= window:
+                return judgement
+        return Judgement.MISS

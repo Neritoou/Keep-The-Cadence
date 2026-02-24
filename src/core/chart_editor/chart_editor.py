@@ -8,6 +8,7 @@ from ..note_renderer import NoteRenderer
 from .chart_editor_ui import ChartEditorUI
 from ..types import NoteDirection
 from .types import EditorKeyState, EditorInfo
+from ...constants import MISS_DISPLAY
 
 if TYPE_CHECKING:
     from ..types import ScrollDirection, JsonChartData, JsonSectionData
@@ -50,11 +51,12 @@ class ChartEditor:
         self.ui = ChartEditorUI(self.screen_width, self.screen_height)
 
         self.note_renderer = NoteRenderer(notes_data,
-                                          hit_line_xs,
-                                          hit_line_y,
-                                          scroll_direction,
-                                          spawn_time_ms,
-                                          self.screen_height
+                                            hit_line_xs,
+                                            hit_line_y,
+                                            scroll_direction,
+                                            spawn_time_ms,
+                                            MISS_DISPLAY,
+                                            self.screen_height
         )
 
         # Estado de teclas
@@ -167,7 +169,7 @@ class ChartEditor:
         if not self.music.playing:
             return
         
-        if self.note_section.current.end_time is not None:
+        if self.note_section.current.end_time > 0.0:
             return
             
         key_state = self.key_states[direction]
@@ -248,13 +250,13 @@ class ChartEditor:
         current = self.note_section.current
         
         # Si Sección abierta alcanzó fin de canción
-        if current.end_time is None:
+        if current.end_time <= 0.0:
             if self.music.has_reached(self.song_duration):
                 self._handle_song_end()
                 return
         
         # Si Sección cerrada alcanzó su fin
-        if current.end_time is not None:
+        if current.end_time > 0.0:
             if self.music.has_reached(current.end_time):
                 self._handle_section_end()
 
@@ -282,7 +284,7 @@ class ChartEditor:
         """Renderiza todo"""
         surface.fill((30, 30, 30))
         # Notas
-        if self.note_section.current.end_time is not None:
+        if self.note_section.current.end_time > 0.0:
             self.note_renderer.draw_default_notes(surface) 
             self.note_renderer.draw_notes(
                 surface,
@@ -300,7 +302,7 @@ class ChartEditor:
             song_duration = self.song_duration,
             section_index = self.note_section.current_index,
             total_sections = self.note_section.sections_size,
-            section_status = "ABIERTA" if self.note_section.current.end_time is None else "CERRADA",
+            section_status = "ABIERTA" if self.note_section.current.end_time <= 0.0 else "CERRADA",
             notes_count = len(self.note_section.current.notes),
             music_playing = self.music.playing,
             snap_enabled = self.note_controller.snap_enabled,
@@ -317,7 +319,7 @@ class ChartEditor:
     
     def can_export_to_json(self) -> bool:
         """Retorna True si todas las secciones están cerradas"""
-        return all(section.end_time is not None for section in self.note_section.sections)
+        return all(section.end_time > 0.0 for section in self.note_section.sections)
     
     def export_to_json(self) -> None:
         """
@@ -334,16 +336,12 @@ class ChartEditor:
             "song": self.song_name,
             "bpm": self.bpm,
             "pixels_per_ms": self.music.pixels_per_ms,
+            "song_duration": self.song_duration,
+            "total_notes": self.note_section.get_total_notes(),
             "sections": []
         }
             
         for section in self.note_section.sections:
-            # Validar que todas las secciones estén cerradas
-            if section.end_time is None:
-                raise ValueError(
-                    f"ChartEditor: No se puede exportar la Data. Sección {section.index + 1} no está cerrada"
-                )
-                
             # Construir datos de la sección
             section_data: "JsonSectionData" = {
                 "index": section.index,

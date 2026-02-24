@@ -1,154 +1,212 @@
 import pygame
 from typing import TYPE_CHECKING
-
-from .chart_data import LoadedChart
+from ..types import ChartData
 from ..note import Note
+from ...audio import AudioCategory
+from ...util.paths import get_inst_path, get_voices_path
 
 if TYPE_CHECKING:
     from ...audio import AudioManager
+    from ..types import Section
 
 class ChartPlayer:
     """
     Controla la reproducción de un chart con sincronización de audio.
-    
-    Responsabilidades:
-    - Sincronizar tiempo del chart con la música
-    - Proporcionar notas visibles en cada momento
-    - Controlar play/pause/stop
+
+    Gestiona el tiempo de la canción usando `pygame.time.get_ticks()` como
+    referencia, garantizando que el chart esté siempre sincronizado con el
+    audio independientemente de los saltos de frame.
+
+    Attributes:
+        chart: Datos del chart cargado.
+        audio: Gestor de audio del juego.
+        spawn_time_ms: Anticipación en ms con la que las notas aparecen en pantalla.
+        current_time: Tiempo actual del chart en milisegundos.
     """
     
-    def __init__(self, chart: LoadedChart, audio_manager: "AudioManager", 
-                 music_path: str, spawn_time_ms: float):
+    def __init__(self, chart: ChartData, audio_manager: "AudioManager",
+                 song_folder: str, spawn_time_ms: float):
         """
         Args:
-            chart: Chart ya cargado.
+            chart: Chart ya parseado y listo para reproducir.
             audio_manager: Gestor de audio del juego.
-            music_path: Ruta al archivo de música.
-            spawn_time_ms: Tiempo de anticipación para spawn de notas.
+            song_folder: Nombre de la carpeta de la canción, usado para
+                         resolver los paths de inst y voices.
+            spawn_time_ms: Tiempo en ms de anticipación para el spawn de notas.
         """
         self.chart = chart
         self.audio = audio_manager
-        self.music_path = music_path
         self.spawn_time_ms = spawn_time_ms
-        
-        # Estado de reproducción
+
+        # Paths resueltos de los archivos de audio
+        self._inst_path = str(get_inst_path(song_folder))
+        self._voices_path = str(get_voices_path(song_folder))
+
+        # Voices se carga completo en RAM como Sound para poder pausarlo
+        # por canal, a diferencia del inst que usa pygame.mixer.music
+        self._voice_sound = pygame.mixer.Sound(self._voices_path)
+        self._voice_channel: pygame.mixer.Channel | None = None
+        self._voice_volume = 1.0
+        self._is_voice_muted = False
+        self.audio.register_sound("song_voices", self._voice_sound, AudioCategory.VOICE)
+
+        # Estado interno de reproducción
         self._playing = False
         self.current_time = 0.0
-        self._start_tick = 0
-        
-        # Cache de notas activas
-        self._active_notes: list[Note] = []
-        self._last_cache_time = -1.0
+        self._start_tick = 0 # tick de pygame en el momento en que se inició la reproducción
 
+        # Lista de notas que deben procesarse en el frame actual
+        self._active_notes: list[Note] = []
+
+    # --- PROPIEDADES ---
     @property
     def is_playing(self) -> bool:
-        """Verifica si está reproduciéndose."""
+        """True si el chart se está reproduciendo activamente."""
         return self._playing
-    
+
     @property
     def is_finished(self) -> bool:
-        """Verifica si el chart terminó."""
-        return self.current_time >= self.chart.total_duration
-
+        """True si el tiempo actual superó la duración total de la canción."""
+        return self.current_time >= self.chart.song_duration
+    
+    @property
+    def current_section(self) -> "Section":
+        """Sección del chart que corresponde al tiempo actual."""
+        return self.chart.current_section
 
 
     # --- CONTROL DE REPRODUCCIÓN ---
     def play(self, start_time: float = 0.0) -> None:
         """
-        Inicia la reproducción del chart desde un tiempo específico.
-        Siempre recarga el audio desde esa posición.
+        Inicia la reproducción sincronizada de inst y voices.
+
+        El inst se reproduce mediante `pygame.mixer.music` y las voices
+        mediante un canal de Sound para poder pausarlas independientemente.
+
+        Args:
+            start_time: Tiempo en ms desde donde iniciar la reproducción.
         """
-        self.audio.play_music(self.music_path, 0, start_time / 1000)
-        
+        self.audio.play_music(self._inst_path, loops=0, start=start_time / 1000)
+        self._voice_channel = self._voice_sound.play()
+
         self.current_time = start_time
         self._start_tick = pygame.time.get_ticks() - int(start_time)
         self._playing = True
-        
-        print(f"ChartPlayer: Reproducción iniciada desde {start_time:.0f}ms")
-    
+
     def pause(self) -> None:
-        """Pausa la reproducción."""
+        """Pausa inst y voices de forma sincronizada."""
         if not self._playing:
             return
-        
+
         self.audio.pause_music()
+        if self._voice_channel:
+            self._voice_channel.pause()
+
         self._playing = False
-        
-        print(f"ChartPlayer: Pausado en {self.current_time}ms")
-    
+
     def resume(self) -> None:
-        """Reanuda la reproducción."""
+        """Reanuda inst y voices de forma sincronizada."""
         if self._playing:
             return
-        
+
         self.audio.unpause_music()
+        if self._voice_channel:
+            self._voice_channel.unpause()
+
         self._start_tick = pygame.time.get_ticks() - int(self.current_time)
         self._playing = True
-        
-        print(f"ChartPlayer: Reanudado desde {self.current_time}ms")
-    
+
     def stop(self) -> None:
-        """Detiene completamente la reproducción."""
+        """
+        Detiene completamente la reproducción y resetea el estado interno.
+        Resetea también el chart para que pueda volver a reproducirse desde cero.
+        """
         self.audio.stop_music()
+
+        if self._voice_channel:
+            self._voice_channel.stop()
+            self._voice_channel = None
+
+        self.chart.reset()
         self._playing = False
         self.current_time = 0.0
-
         self._active_notes.clear()
+
+    def cleanup(self) -> None:
+        """
+        Libera el sonido de voices del AudioManager.
         
-        print("ChartPlayer: Detenido.")
-    
+        Debe llamarse desde PlayState.on_exit() siempre DESPUÉS de stop(),
+        ya que stop() detiene el canal antes de que el Sound sea liberado.
+        """
+        self.audio.unregister_sound("song_voices", AudioCategory.VOICE)
+
     def toggle_play_pause(self) -> None:
-        """Alterna entre play y pause."""
+        """Alterna entre play y pausa según el estado actual."""
         if self._playing:
             self.pause()
-        elif self.current_time == 0:
+        elif self.current_time == 0.0:
             self.play()
         else:
             self.resume()
+
+
+    # --- CONTROL DE VOCES ---
+    def mute_voices(self) -> None:
+        """
+        Silencia las voices guardando el volumen previo para restaurarlo después.
+        Se llama cuando el personaje entra en estado de fallo.
+        """
+        if self._is_voice_muted:
+            return
+        self._voice_volume = self.audio.get_category_volume(AudioCategory.VOICE)
+        self._is_voice_muted = True
+        self.audio.set_category_volume(AudioCategory.VOICE, 0.0)
+
+    def unmute_voices(self) -> None:
+        """
+        Restaura el volumen de voices al valor previo al mute.
+        Se llama cuando el personaje vuelve a un estado de acierto.
+        """        
+        if not self._is_voice_muted:
+            return
+        self.audio.set_category_volume(AudioCategory.VOICE, self._voice_volume)
+        self._is_voice_muted = False
     
+    # --- MISSES AUTOMÁTICOS ---
+    def pop_missed_notes(self) -> list[Note]:
+        """
+        Detecta y marca como MISSED las notas cuya ventana de hit expiró.
 
+        Debe llamarse siempre DESPUÉS de update() en el mismo frame para
+        garantizar que _active_notes esté actualizado al tiempo correcto.
 
+        Returns:
+            Lista de notas que acaban de pasar a estado MISSED en este frame.
+        """
+        missed = []
+        for note in self._active_notes:
+            if note.is_missed(self.current_time):
+                note.on_missed()
+                missed.append(note)
+        return missed
+    
     # --- ACTUALIZACIÓN ---
     def update(self, dt: float) -> None:
-        """Actualiza el tiempo del chart (llamar cada frame)."""
+        """Avanza el tiempo del chart y refresca las notas activas."""
         if not self._playing:
             return
-        
-        # Se sincroniza el tiempo real
+
         self.current_time = float(pygame.time.get_ticks() - self._start_tick)
-        
-        # Verifica si se llegó al final
-        if self.current_time >= self.chart.total_duration:
+        self.chart.advance_section(self.current_time)
+        self._active_notes = self.chart.get_current_notes(self.current_time, self.spawn_time_ms)
+
+        if self.current_time >= self.chart.song_duration:
             self.stop()
-            print("ChartPlayer: Chart completado")
-    
-
-
-    # --- OBTENER NOTAS ACTIVAS ---
-    def get_active_notes(self) -> list[Note]:
-        """
-        Obtiene las notas que deben ser visibles en el tiempo actual.
-        Usa cache para evitar recalcular en cada frame.
-        """
-        # Si el tiempo no cambió significativamente, usar cache
-        if abs(self.current_time - self._last_cache_time) < 16:  # 1 frame a 60fps
-            return self._active_notes
-        
-        # Recalcular notas activas
-        self._active_notes = self.chart.get_all_active_notes(self.current_time, self.spawn_time_ms)
-        self._last_cache_time = self.current_time
-        
-        return self._active_notes
-    
-
 
     # --- HELPERS ---
     def get_progress_percentage(self) -> float:
-        """Calcula el progreso del chart en porcentaje (0-100)."""
-        if self.chart.total_duration == 0:
+        """Calcula el porcentaje de progreso de la canción."""
+        if self.chart.song_duration == 0:
             return 100.0
-        return (self.current_time / self.chart.total_duration) * 100
-    
-    def get_current_section(self):
-        """Obtiene la sección activa actual."""
-        return self.chart.get_section_at_time(self.current_time)
+        return (self.current_time / self.chart.song_duration) * 100

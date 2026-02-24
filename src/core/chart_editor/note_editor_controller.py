@@ -4,7 +4,7 @@ from ..types import NoteDirection
 from ...constants import MIN_HOLD_DURATION_MS
 
 if TYPE_CHECKING:
-    from .types import Section
+    from ..types import Section
 
 class NoteEditorController:
     """Controlador de notas para el editor"""
@@ -39,7 +39,7 @@ class NoteEditorController:
             duration = min(duration, max_song_duration)
 
             # No salir de la sección
-            if section.end_time is not None:
+            if section.end_time > 0.0:
                 duration = min(duration, section.end_time - hit_time)
 
         duration = self.snap_time_to_grid(duration)
@@ -54,7 +54,7 @@ class NoteEditorController:
     
     def can_remove_last_note(self, section: "Section") -> bool:
         """Verifica si se puede eliminar la última nota"""
-        return section.end_time is None and bool(section.notes)
+        return section.end_time <= 0.0 and bool(section.notes)
     
     def remove_last_note(self, section: "Section") -> Note:
         """Elimina la última nota colocada en una sección"""
