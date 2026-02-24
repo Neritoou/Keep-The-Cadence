@@ -1,4 +1,4 @@
-from .types import Section
+from ..types import Section
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -20,7 +20,7 @@ class NoteSectionEditor:
         self.visible_count = 10     # cuántas secciones se muestran
         self.scroll_offset = 0      # desde qué índice se dibuja
 
-    def create(self, index: int, start: float, end: float | None = None) -> None:
+    def create(self, index: int, start: float, end: float = 0.0) -> None:
         """Crea la primera sección (abierta)"""
         section = Section(
             index = index,
@@ -33,7 +33,7 @@ class NoteSectionEditor:
     def can_close_current(self) -> bool:
         """Verifica si es posible cerrar la sección actual"""
         # Verificar si ya está cerrada
-        if self.current.end_time is not None:
+        if self.current.end_time > 0.0:
             return False
         return True
     
@@ -58,7 +58,7 @@ class NoteSectionEditor:
         self.set_current_index(self.current_index - 1)
         
         # Reabrir la sección anterior
-        self.current.end_time = None
+        self.current.end_time = 0.0
 
     def set_current_index(self, index: int) -> None:
         """Establece el índice de la sección actual"""
@@ -101,7 +101,7 @@ class NoteSectionEditor:
 
     def move_to_new(self):
         "Saltar automáticamente a la nueva sección"
-        if not self.current.end_time:
+        if self.current.end_time <= 0.0:
             return
     
         self.create(self.sections_size, self.current.end_time)    
@@ -125,8 +125,8 @@ class NoteSectionEditor:
 
             color = (0, 255, 0) if index == self.current_index else (200, 200, 200)
 
-            end_time_str = f"{section.end_time/1000:.2f}s" if section.end_time else "???"
-            status = "CERRADA" if section.end_time else "ABIERTA"
+            end_time_str = f"{section.end_time/1000:.2f}s" if section.end_time > 0.0 else "???"
+            status = "CERRADA" if section.end_time > 0.0 else "ABIERTA"
             notes_info = f"{len(section.notes)} notas" if section.notes else "VACÍA"
 
             section_info = (
@@ -150,3 +150,7 @@ class NoteSectionEditor:
     @property
     def current(self) -> Section:
         return self.sections[self.current_index]
+    
+    def get_total_notes(self) -> int:
+        "Devuelve la cantidad total de notas hasta ahora en la Cancion"
+        return sum(len(data.notes) for data in self.sections)

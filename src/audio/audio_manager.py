@@ -24,7 +24,7 @@ class AudioManager:
         pygame.mixer.init(frequency=frequency, size=size, channels=channels, buffer=buffer)
         
         # Estado de música
-        self._current_music: str | None = None  
+        self._current_music: str = ""
         self._music_paused: bool = False
         
         # Volúmenes por categoría (0.0 a 1.0)
@@ -69,7 +69,7 @@ class AudioManager:
             self._apply_music_volume()
             
         except pygame.error as e:
-            self._current_music = None
+            self._current_music = ""
             print(f"Audio Manager: Error reproduciendo música, {e}")
 
     
