@@ -1,0 +1,76 @@
+{
+  "songs": [
+    {
+      "id": 0,
+      "name": "Aishite",
+      "difficulties": {
+        "EASY": {
+          "records": [
+            {
+              "points": 12500,
+              "perfects": 98,
+              "goods": 12,
+              "bads": 4,
+              "misses": 1,
+              "max_combo": 87,
+              "stars": 4,
+              "accuracy": 95.2,
+              "date": "2026-02-20"
+            },
+            {
+              "points": 9800,
+              "perfects": 80,
+              "goods": 20,
+              "bads": 8,
+              "misses": 5,
+              "max_combo": 60,
+              "stars": 3,
+              "accuracy": 82.5,
+              "date": "2026-02-18"
+            },
+            {
+              "points": 7200,
+              "perfects": 60,
+              "goods": 25,
+              "bads": 15,
+              "misses": 10,
+              "max_combo": 40,
+              "stars": 2,
+              "accuracy": 71,
+              "date": "2026-02-15"
+            }
+          ]
+        },
+        "NORMAL": {
+          "records": [
+            {
+              "points": 18000,
+              "perfects": 140,
+              "goods": 10,
+              "bads": 3,
+              "misses": 2,
+              "max_combo": 130,
+              "stars": 3,
+              "accuracy": 93.8,
+              "date": "2026-02-21"
+            },
+            {
+              "points": 14000,
+              "perfects": 110,
+              "goods": 20,
+              "bads": 10,
+              "misses": 8,
+              "max_combo": 95,
+              "stars": 2,
+              "accuracy": 84.1,
+              "date": "2026-02-19"
+            }
+          ]
+        },
+        "HARD": {
+          "records": []
+        }
+      }
+    }
+  ]
+}
