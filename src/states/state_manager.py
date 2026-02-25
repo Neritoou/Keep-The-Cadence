@@ -6,6 +6,7 @@ from .menu_state import MenuState
 from .pause_state import PauseState
 from .game_over_state import GameOverState
 from .win_state import WinState
+from .transition_state import TransitionState
 
 from .chart_creator_state import ChartCreatorState
 from .chart_setup_state import ChartSetupState
@@ -14,7 +15,6 @@ import pygame
 if TYPE_CHECKING:
     from ..core.game import Game
     from .game_state import GameState
-    from .win_state import WinState
 
 class StateManager:
     """
@@ -31,7 +31,8 @@ class StateManager:
             StateID.GAME_OVER: GameOverState,
             StateID.WIN: WinState,
             StateID.CHART_CREATOR: ChartCreatorState,
-            StateID.CHART_SETUP: ChartSetupState
+            StateID.CHART_SETUP: ChartSetupState,
+            StateID.TRANSITION: TransitionState
         }
 
     @property
@@ -42,12 +43,17 @@ class StateManager:
             raise ValueError("State Manager: No hay estados en la pila.")
         return self.stack[-1] 
     
+    def change_with_transition(self, state_id: StateID, **kwargs) -> None:
+        """Cambia al estado indicado por su ID pero con animación de transición"""
+        self.change(StateID.TRANSITION, target=state_id, kwargs=kwargs)
+
     def change(self, state_id: StateID, **kwargs) -> None:
         """
         Cambia al estado indicado por su ID (por ejemplo, StateID.PLAY o StateID.PAUSE).
 
         - Si el nuevo estado NO es un overlay, el estado superior actual es eliminado
         - Si el nuevo estado ES un overlay, se apila sobre el estado actual sin eliminarlo.
+        
         Args:
             state_id: identificador ENUM de StateID
         """

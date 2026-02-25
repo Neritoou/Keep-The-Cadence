@@ -84,7 +84,7 @@ class MenuState(GameState):
 
     # --- Callbacks ---
     def _on_play(self):
-        self.game.state.change(StateID.PLAY, song_folder="Aishite")
+        self.game.state.change_with_transition(StateID.PLAY, song_folder="Aishite")
     
     def _on_editor(self):
         self.game.state.change(StateID.CHART_SETUP)
