@@ -1,6 +1,7 @@
 from typing import Type, TYPE_CHECKING
 from .types import StateID, OverlayType
 
+from .song_select_state import SongSelectState
 from .play_state import PlayState
 from .menu_state import MenuState
 from .pause_state import PauseState
@@ -32,7 +33,8 @@ class StateManager:
             StateID.WIN: WinState,
             StateID.CHART_CREATOR: ChartCreatorState,
             StateID.CHART_SETUP: ChartSetupState,
-            StateID.TRANSITION: TransitionState
+            StateID.TRANSITION: TransitionState,
+            StateID.SONG_SELECT: SongSelectState
         }
 
     @property

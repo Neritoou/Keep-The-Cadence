@@ -29,15 +29,10 @@ class SongSelectState(GameState):
         self._preview_elapsed_ms = 0.0   # acumula ms desde que el preview está sonando
         self._preview_active     = False
 
-    # ------------------------------------------------------------------ #
-    #  CICLO DE ESTADO                                                     #
-    # ------------------------------------------------------------------ #
-
     def on_enter(self) -> None:
         self._reset_preview()
 
     def on_exit(self) -> None:
-        self.game.audio.stop_music(200)
         self.game.audio.stop_all_sounds()
 
     def handle_input(self, events: list[pygame.event.Event]) -> None:
@@ -94,10 +89,7 @@ class SongSelectState(GameState):
             surface.blit(font_small.render(f"#{rank} {stars}  {rec.points:,} pts  {rec.date}", True, (200, 200, 200)), (w // 2 + 20, y))
             y += 35
 
-    # ------------------------------------------------------------------ #
-    #  DATOS — CANCIONES                                                   #
-    # ------------------------------------------------------------------ #
-
+    #  DATOS — CANCIONES
     def get_songs(self) -> list[Song]:
         """Lista completa de canciones."""
         return self._songs
@@ -110,10 +102,7 @@ class SongSelectState(GameState):
         """Índice de la canción seleccionada."""
         return self._song_index
 
-    # ------------------------------------------------------------------ #
-    #  DATOS — DIFICULTAD                                                  #
-    # ------------------------------------------------------------------ #
-
+    #  DATOS — DIFICULTAD
     def get_diff_order(self) -> list[DifficultyName]:
         """Orden de dificultades disponibles."""
         return DIFF_ORDER
@@ -126,10 +115,7 @@ class SongSelectState(GameState):
         """Objeto Difficulty activo, o None si no existe."""
         return self.get_current_song().get_difficulty(self.get_current_diff_name())
 
-    # ------------------------------------------------------------------ #
-    #  DATOS — RECORDS                                                     #
-    # ------------------------------------------------------------------ #
-
+    #  DATOS — RECORDS
     def get_current_records(self) -> list[Record]:
         """Records de la dificultad activa. Lista vacía si no hay ninguno."""
         diff = self.get_current_diff()
@@ -140,10 +126,7 @@ class SongSelectState(GameState):
         diff = self.get_current_diff()
         return diff.top_record if diff else None
 
-    # ------------------------------------------------------------------ #
-    #  NAVEGACIÓN                                                          #
-    # ------------------------------------------------------------------ #
-
+    #  NAVEGACIÓN
     def _move_song(self, direction: int) -> None:
         self._song_index = (self._song_index + direction) % len(self._songs)
         self._reset_preview()
@@ -156,6 +139,7 @@ class SongSelectState(GameState):
         if diff is None:
             return
         song = self.get_current_song()
+        self.game.audio.stop_music()   # fade antes de cambiar de estado
         self.game.state.change_with_transition(
             StateID.PLAY,
             song_folder=song.name,
@@ -163,10 +147,7 @@ class SongSelectState(GameState):
             difficulty=self.get_current_diff_name(),
         )
 
-    # ------------------------------------------------------------------ #
-    #  PREVIEW DE AUDIO                                                    #
-    # ------------------------------------------------------------------ #
-
+    #  PREVIEW DE AUDIO
     def _reset_preview(self) -> None:
         """Para el audio y reinicia todos los contadores."""
         self.game.audio.stop_music()
@@ -188,8 +169,6 @@ class SongSelectState(GameState):
         """Vuelve al segundo 30 sin detener la música (sin corte audible)."""
         self._preview_elapsed_ms = 0.0
         pygame.mixer.music.set_pos(PREVIEW_START_SEC)
-
-    # ------------------------------------------------------------------ #
 
     @property
     def overlay_type(self) -> OverlayType:
