@@ -18,7 +18,7 @@ class UIButton(UIElement):
             self, name: str, x: int, y: int, callback_function: Callable[[], None],
             base_button: pygame.Surface, hover_button: Optional[pygame.Surface] = None,
             press_button: Optional[pygame.Surface] = None, *,
-            text: Optional["UILabel"] = None, visible: bool = True, enabled: bool = True
+            text: Optional["UILabel"] = None, visible: bool = True
     ):
         """
         Inicializa las propiedades de un botón.
@@ -48,7 +48,7 @@ class UIButton(UIElement):
         self._is_hovered: bool = False
         self._is_pressed: bool = False
 
-        super().__init__(name, x, y, width, height, visible=visible, enabled=enabled)
+        super().__init__(name, x, y, width, height, visible=visible)
 
         if self._text:
             self._center_text_on_button()
@@ -73,17 +73,6 @@ class UIButton(UIElement):
     @is_pressed.setter
     def is_pressed(self, value: bool) -> None:
         self._is_pressed = value
-
-    def set_enabled(self, status: bool) -> None:
-        """Activa o desactiva el botón y visualmente le da un tono grisáceo."""
-        self.enabled = status
-        
-        if not status:
-            self.alpha = 128  # Semitransparente
-            self._is_hovered = False
-            self._is_pressed = False
-        else:
-            self.alpha = 255
 
     def set_text(self, new_text: str) -> None:
         """Actualiza el texto del botón de ser necesario."""
@@ -124,7 +113,7 @@ class UIButton(UIElement):
     # --- MÉTODOS PRIVADOS ---
     def on_click(self) -> None:
         """Ejecuta la función callback cuando el botón es presionado."""
-        if self.enabled and self._function:
+        if self._function:
             self._function()
 
     def _center_text_on_button(self) -> None:

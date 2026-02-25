@@ -46,6 +46,13 @@ class NoteRenderer:
             for direction in notes_data.keys()
         }
 
+    def reset_receptors(self) -> None:
+        """Resetea todos los receptores a estado IDLE."""
+        for direction in self.receptors:
+            self.receptors[direction].state = ReceptorState.IDLE
+            self.receptors[direction].direction = None
+            self.receptors[direction].timer = 0.0
+
     # --- INPUT ---
     def press_hit(self, direction: "NoteDirection") -> None:
         """Notifica al receptor que se presionó una tecla con hit correcto."""

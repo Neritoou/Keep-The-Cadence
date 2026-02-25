@@ -1,16 +1,20 @@
 import pygame
-from typing import Tuple, Union
+from typing import TYPE_CHECKING
+
 from ...ui import UIElement
 
-ColorValue = Union[pygame.Color, Tuple[int, int, int], str]
+if TYPE_CHECKING:
+    from ...ui import ColorValue
 
 class UILabel(UIElement):
     """Representa una etiqueta de texto en la interfaz de usuario."""
-    def __init__(self, name: str, x: int, y: int,
-                 text: str, font: pygame.font.Font,
-                 color: ColorValue = (255, 255, 255), *, center: bool = True,
-                 visible: bool = True, alpha: int = 255, scale: float = 1.0,
-                 angle: int = 0):
+    def __init__(
+            self, name: str, x: int, y: int,
+            text: str, font: pygame.font.Font,
+            color: "ColorValue" = (255, 255, 255), *, center: bool = True,
+            visible: bool = True, alpha: int = 255, scale: float = 1.0,
+            angle: int = 0
+            ):
         """
         Inicializa las propiedades de las etiquetas.
         
@@ -28,8 +32,7 @@ class UILabel(UIElement):
         self.text_surface = font.render(self.text, True, self.color)
         width, height = self.text_surface.get_size()
 
-        super().__init__(name, x, y, width, height, visible=visible,
-                         enabled=False, alpha=alpha, scale=scale, angle=angle)
+        super().__init__(name, x, y, width, height, visible=visible, alpha=alpha, scale=scale, angle=angle)
         
         if center:
             self.center_at(x)
@@ -43,7 +46,7 @@ class UILabel(UIElement):
             pos = self.rect.topleft
             self.rect = self.text_surface.get_rect(topleft=pos)
 
-    def set_color(self, new_color: ColorValue) -> None:
+    def set_color(self, new_color: "ColorValue") -> None:
         """Cambia el color del texto y regenera la superficie."""
         temp_color = pygame.Color(new_color)
 
@@ -67,6 +70,9 @@ class UILabel(UIElement):
 
     # --- MÉTODOS ABSTRACTOS DE UIElement ---
     def render(self, surface: pygame.Surface) -> None:
+        if not self.visible:
+            return
+        
         self.text_surface.set_alpha(int(self.alpha))
         
         # Se dibuja el elemento estático sobre la superficie de la pantalla

@@ -42,6 +42,10 @@ class Character:
     @property
     def sing_duration(self) -> float:
         return self._sing_duration
+    
+    def reset(self) -> None:
+        """Resetea el personaje al estado idle."""
+        self._go_idle()
 
     def _recalculate_timing(self) -> None:
         self._ms_per_beat = 60000.0 / self.bpm
