@@ -37,7 +37,7 @@ class PlayState(GameState):
             )
 
         performance_icon = game.resources.get_spritesheet("PerformanceIcon")
-        self.performance_bar = PerformanceBar("performance_bar", 340, 600, 600, performance_icon)
+        self.performance_bar = PerformanceBar("performance_bar", 340, 600, 600, performance_icon, icon_lerp_speed=5.0)
 
         font = game.resources.get_font("Estandar", 30)
 
@@ -53,7 +53,6 @@ class PlayState(GameState):
         self.debug_font = pygame.font.Font(None, 24)
 
         self.game.character.update_bpm(self.chart.bpm)
-        self._transitioning = False
         self.player.play()
 
     # (!) Ver donde se va a ubicar
@@ -61,7 +60,12 @@ class PlayState(GameState):
         return self.score_manager.performance <= 0.00
 
     def on_enter(self) -> None:
-        pass
+        self.game.character.reset()
+        self.game.note_renderer.reset_receptors()
+
+        self.game.character.update_bpm(self.chart.bpm)
+        self.game.character.animator.play("idle",reset=True, loop=True)
+        self.player.play()
 
     def on_exit(self) -> None:
         self.player.stop()
@@ -72,9 +76,6 @@ class PlayState(GameState):
         self.player.resume()
 
     def update(self, dt: float) -> None:
-        if self._transitioning:
-            return
-
         self.player.update(dt)
         self.game.note_renderer.update(dt)
         self.game.character.update(dt)
@@ -87,11 +88,9 @@ class PlayState(GameState):
         self.ui.update(dt)
 
         if self.is_game_over():
-            self._transitioning = True
             self.game.state.change(StateID.GAME_OVER, final_score=self.score_manager.score, song_folder=self.song_folder)
 
         if self.player.is_finished:
-            self._transitioning = True
             self.game.state.change(StateID.WIN, final_score=self.score_manager.score, song_folder=self.song_folder)
     
     def handle_input(self, events: list[pygame.event.Event]) -> None:

@@ -78,6 +78,9 @@ class PerformanceBar(UIElement):
         """
         self._target_ratio = max(0.0, min(1.0, performance_ratio))
 
+        self._snap(self._target_ratio)
+
+
     def update(self, dt: float) -> None:
         super().update(dt)
 
@@ -167,3 +170,8 @@ class PerformanceBar(UIElement):
             pygame.Rect(0, 0, self._bar_width, self._bar_height),
             border_radius=6
         )
+
+    def _snap(self, target_ratio: float) -> None:
+        if target_ratio <= 0.0:
+            self._display_ratio = 0.0
+            self._current_frame_index = self._get_frame_index(0.0)
