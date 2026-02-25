@@ -16,6 +16,13 @@ BASE_PATH = get_base_path()
 # Ruta a los assets
 ASSETS_ROOT = BASE_PATH / "assets"
 
+def get_path(*paths: str) -> Path:
+    """Devuelve la ruta absoluta de una dirección como un objeto Path"""
+    path = BASE_PATH.joinpath(*paths)
+    if not path.is_file():
+        raise FileNotFoundError(f"Paths: Archivo {paths[-1]} no encontrado inválido en la Ruta:\n{path}")
+    return path
+
 def get_asset(*paths: str) -> Path:
     """
     Devuelve la ruta absoluta de un asset como un objeto Path.
@@ -32,6 +39,7 @@ def get_asset(*paths: str) -> Path:
         raise FileNotFoundError(f"Paths: Asset {paths[-1]} no encontrado o inválido en la Ruta:\n{path}")
     return path
 
+
 # --- SONGS ----
 SONGS_ROOT = ASSETS_ROOT / "songs"
 
@@ -42,7 +50,7 @@ def list_song_folders() -> list[str]:
         return []
     return [p.name for p in SONGS_ROOT.iterdir() if p.is_dir()]
 
-def _get_folder_path(folder_name: str) -> Path:
+def _get_song_folder_path(folder_name: str) -> Path:
     """Devuelve el Path absoluto de una carpeta de canción por nombre"""
     path = SONGS_ROOT / folder_name
     if not path.exists() or not path.is_dir():
@@ -50,25 +58,25 @@ def _get_folder_path(folder_name: str) -> Path:
     return path
 
 def get_full_song_path(folder_name: str) -> Path:
-    path = _get_folder_path(folder_name) / "full_song.ogg"
+    path = _get_song_folder_path(folder_name) / "full_song.ogg"
     if not path.is_file():
         raise FileNotFoundError(f"Paths: Full Song en el folder {folder_name} no encontrado o inválido en la Ruta:\n{path}")
     return path 
 
 def get_voices_path(folder_name: str) -> Path:
-    path = _get_folder_path(folder_name) / "voice.ogg"
+    path = _get_song_folder_path(folder_name) / "voice.ogg"
     if not path.is_file():
         raise FileNotFoundError(f"Paths: Voices en el folder {folder_name} no encontrado o inválido en la Ruta:\n{path}")
     return path 
 
 def get_inst_path(folder_name: str) -> Path:
-    path = _get_folder_path(folder_name) / "inst.ogg"
+    path = _get_song_folder_path(folder_name) / "inst.ogg"
     if not path.is_file():
         raise FileNotFoundError(f"Paths: Instrumental en el folder {folder_name} no encontrado o inválido en la Ruta:\n{path}")
     return path 
 
 def get_chart_path(folder_name: str) -> Path:
-    path = _get_folder_path(folder_name) / "chart.json"
+    path = _get_song_folder_path(folder_name) / "chart.json"
     if not path.is_file():
         raise FileNotFoundError(f"Paths: Chart en el folder {folder_name} no encontrado o inválido en la Ruta:\n{path}")
     return path 
