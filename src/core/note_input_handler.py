@@ -58,7 +58,6 @@ class NoteInputHandler:
         la procesa como hit; si no, como ghost press.
         """
         note = self._find_hittable_note(direction)
-        print(f"[INPUT] PRESS {direction.name} | nota encontrada: {note is not None}")
         if note is None:
             self._handle_ghost_press(direction)
         else:
@@ -73,7 +72,6 @@ class NoteInputHandler:
         Si no había hold activa, solo libera el estado visual.
         """
         note = self._held_notes[direction]
-        print(f"[INPUT] RELEASE {direction.name} | hold activa: {note is not None}")
 
         if note is None:
             # Sin hold activa: solo liberar visual.
@@ -100,7 +98,7 @@ class NoteInputHandler:
         self._update_hold_tracking()
 
         for note in self.player.pop_missed_notes():
-            print(f"[MISS AUTO] {note.direction.name} | hold: {note.is_hold_note}")  # ← nota: usar note.direction
+            print(f"[MISS AUTO] {note.direction.name} | hold: {note.is_hold_note}")
             self.renderer.press_miss(note.direction)
             self.character.press_miss(note.direction)
             self.player.mute_voices()
@@ -128,8 +126,8 @@ class NoteInputHandler:
         al renderer, personaje y audio. Si es hold, la registra en
         _held_notes para tracking posterior.
         """
-        judgement = note.get_judgement(self.player.current_time)
-        note.on_hit()  # PENDING → ACTIVE (hold) | PENDING → COMPLETED (tap)
+        judgement = note.get_judgement(self.player.current_time,self.player.diff_data.judgement_windows)
+        note.on_hit()  # PENDING -> ACTIVE (hold) | PENDING -> COMPLETED (tap)
         
         self._score.register_tap(judgement)
 
@@ -154,8 +152,7 @@ class NoteInputHandler:
         self.renderer.press_miss(direction)
         self.character.press_miss(direction)
         self._play_miss_sound()
-        self._score.register_tap(Judgement.MISS)
-
+        self._score.register_ghost_press()
         print(f"[GHOST] {direction.name}")
         
     def _handle_hold_drop(self, note: "Note", direction: "NoteDirection") -> None:
@@ -169,8 +166,9 @@ class NoteInputHandler:
             note: Hold activa que se está dropeando.
             direction: Dirección de la hold.
         """
-        judgement = note.get_judgement(self.player.current_time)
-        note.on_missed()  # ACTIVE → MISSED
+        judgement = note.get_judgement(self.player.current_time,self.player.diff_data.judgement_windows)
+        note.on_missed()  # ACTIVE -> MISSED
+        self._score.register_ghost_press()
 
         self._held_notes[direction]   = None
         self._missed_holds[direction] = note  # sigue visible hasta end_time
@@ -183,9 +181,6 @@ class NoteInputHandler:
         # TODO: enviar judgement al sistema de Score como hold drop
         print(f"[DROP] {direction.name} — {judgement.name}")
 
-        held_ratio = (self.player.current_time - note.hit_time) / note.duration
-        self._score.register_hold_release(max(0.0, min(1.0, held_ratio)))
-
     def _handle_hold_complete(self, note: "Note", direction: "NoteDirection") -> None:
         """
         Procesa una hold completada: el jugador soltó dentro del window final.
@@ -194,7 +189,7 @@ class NoteInputHandler:
             note: Hold activa que se completó.
             direction: Dirección de la hold.
         """
-        note.on_completed()  # ACTIVE → COMPLETED
+        note.on_completed()  # ACTIVE -> COMPLETED
 
         self._score.register_hold_release(1.0)
 
@@ -221,7 +216,7 @@ class NoteInputHandler:
                 continue
             if note.state != NoteState.PENDING:  # solo PENDING es golpeable
                 continue
-            if not note.is_hittable(current_time):
+            if not note.is_hittable(current_time, self.player.diff_data.judgement_windows):
                 continue
             delta = abs(note.hit_time - current_time)
             if delta < best_delta:
@@ -261,3 +256,8 @@ class NoteInputHandler:
         """Reproduce un sonido de fallo aleatorio de entre los disponibles."""
         sound = choice(self._miss_sounds)
         self.player.audio.play_sound(sound)
+
+    def reset(self) -> None:
+        """Limpia las holds activas y fallidas."""
+        self._held_notes   = {d: None for d in NoteDirection}
+        self._missed_holds = {d: None for d in NoteDirection}
