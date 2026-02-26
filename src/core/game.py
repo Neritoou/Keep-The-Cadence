@@ -8,8 +8,8 @@ from ..config import *
 from ..core.character_factory import CharacterFactory
 from ..core.types import NoteDirection, ScrollDirection
 from ..core.note_renderer import NoteRenderer
-from ..constants import HIT_LINE_XS, HIT_LINE_Y_UP, SPAWN_TIME_MS, MISS_DISPLAY
-from ..database import Database
+from ..constants import HIT_LINE_XS, HIT_LINE_Y_UP, SPAWN_TIME_MS, MISS_DISPLAY, MIKU_PLAY_POSITION
+from ..core.database import Database
 from ..util import get_path
 
 class Game(GameBase):
@@ -19,11 +19,11 @@ class Game(GameBase):
 
         # 2. Inicialización de estado interno
         self.controls_config = ControlsConfig(path="config/controls.json")
-        self.resources: ResourceManager = ResourceManager()
-        self.database: Database = Database(get_path("src","database","game_data.json"))
+        self.resources = ResourceManager()
+        self.database = Database(get_path("src","core","database","game_data.json"))
         self.input = InputManager(self.controls_config.data)
-        self.state: StateManager = StateManager(self)
-        self.audio: AudioManager = AudioManager()
+        self.state = StateManager(self)
+        self.audio = AudioManager()
 
     def on_start(self) -> None:
         # Cargar Recursos
@@ -31,7 +31,7 @@ class Game(GameBase):
         self.audio.register_sounds(self.resources.get_sounds())
         self.database.load()
 
-        self.character = CharacterFactory.create_miku(self.resources,(1050,400))
+        self.character = CharacterFactory.create_miku(self.resources,MIKU_PLAY_POSITION)
 
         self.note_renderer = NoteRenderer(
             self.resources.get_all_notes(), HIT_LINE_XS, HIT_LINE_Y_UP,
