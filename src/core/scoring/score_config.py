@@ -11,7 +11,6 @@ BASE_POINTS: dict[Judgement, int] = {
 HIT_JUDGEMENTS: set[Judgement] = {
     Judgement.PERFECT,
     Judgement.GOOD,
-    Judgement.BAD
 }
 
 # Multiplicador de combo
@@ -25,6 +24,8 @@ COMBO_THRESHOLDS: list[tuple[int, float]] = [
 ]
 
 HOLD_BONUS_FACTOR: float = 0.5
+
+MAX_STARS = 4
 
 # Rangos finales
 STARS: list[tuple[float, int]] = [
@@ -48,3 +49,9 @@ PERFORMANCE_ZONES: list[tuple[float, int]] = [
     (0.45, 0),  # neutral
     (0.75, 1)   # feliz
 ]
+
+ACCURACY_WEIGHTS = {
+    Judgement.PERFECT: 1.0,
+    Judgement.GOOD:    0.75,
+    Judgement.BAD:     0.5,
+}
