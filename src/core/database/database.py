@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from .types import Song, Difficulty, Record, DifficultyName
-from ..constants import MAX_RECORDS
+from ...constants import MAX_RECORDS
 
 class Database:
     """
@@ -69,10 +69,9 @@ class Database:
         return entered
 
     #  BUILDERS — JSON -> modelos
-    @staticmethod
-    def _build_song(raw: dict) -> Song:
+    def _build_song(self, raw: dict) -> Song:
         difficulties = {
-            DifficultyName(name): Database._build_difficulty(DifficultyName(name), raw["difficulties"][name])
+            DifficultyName(name): self._build_difficulty(DifficultyName(name), raw["difficulties"][name])
             for name in ("EASY", "NORMAL", "HARD")
         }
         return Song(
@@ -81,45 +80,27 @@ class Database:
             difficulties = difficulties,
         )
 
-    @staticmethod
-    def _build_difficulty(name: DifficultyName, raw: dict) -> Difficulty:
-        records = [Database._build_record(r) for r in raw["records"]]
+    def _build_difficulty(self, name: DifficultyName, raw: dict) -> Difficulty:
+        records = [self._dict_to_record(r) for r in raw["records"]]
         return Difficulty(name=name, records=records)
 
-    @staticmethod
-    def _build_record(raw: dict) -> Record:
-        return Record(
-            points=raw["points"],
-            perfects=raw["perfects"],
-            goods=raw["goods"],
-            bads=raw["bads"],
-            misses=raw["misses"],
-            max_combo=raw["max_combo"],
-            stars=raw["stars"],
-            accuracy=raw["accuracy"],
-            date=raw["date"],
-        )
-
     #  SERIALIZACIÓN — modelos -> JSON
-    @staticmethod
-    def _song_to_dict(song: Song) -> dict:
+    def _song_to_dict(self, song: Song) -> dict:
         return {
             "id":     song.id,
             "name":   song.name,
             "difficulties": {
-                diff.name.value: Database._difficulty_to_dict(diff)
+                diff.name.value: self._difficulty_to_dict(diff)
                 for diff in song.difficulties.values()
             },
         }
 
-    @staticmethod
-    def _difficulty_to_dict(difficulty: Difficulty) -> dict:
+    def _difficulty_to_dict(self, difficulty: Difficulty) -> dict:
         return {
-            "records": [Database._record_to_dict(r) for r in difficulty.records]
+            "records": [self._record_to_dict(r) for r in difficulty.records]
         }
 
-    @staticmethod
-    def _record_to_dict(record: Record) -> dict:
+    def _record_to_dict(self, record: Record) -> dict:
         return {
             "points":    record.points,
             "perfects":  record.perfects,
@@ -132,6 +113,19 @@ class Database:
             "date":      record.date,
         }
 
+    def _dict_to_record(self, raw: dict) -> Record:
+        return Record(
+            points=raw["points"],
+            perfects=raw["perfects"],
+            goods=raw["goods"],
+            bads=raw["bads"],
+            misses=raw["misses"],
+            max_combo=raw["max_combo"],
+            stars=raw["stars"],
+            accuracy=raw["accuracy"],
+            date=raw["date"],
+        )
+    
     #  --- HELPERS ---
     @staticmethod
     def _is_better(new: Record, existing: Record) -> bool:
