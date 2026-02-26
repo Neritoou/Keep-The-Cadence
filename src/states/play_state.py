@@ -9,13 +9,14 @@ from ..core.chart_player import ChartLoader, ChartPlayer
 from ..core.note_input_handler import NoteInputHandler
 from ..core.scoring import ScoreManager
 from ..core.types import Judgement
+from ..core.difficulty_data import DIFFICULTY_DATA
 
-from ..constants import SPAWN_TIME_MS
+from ..constants import SPAWN_TIME_MS, MIKU_PLAY_POSITION
 from ..ui import PerformanceBar, UILabel, UIManager
 
 if TYPE_CHECKING:
     from ..core.game import Game
-    from ..database import DifficultyName
+    from ..core.database import DifficultyName
 
 
 
@@ -25,16 +26,20 @@ class PlayState(GameState):
         super().__init__(game)
         self.song_id = song_id
         self.song_folder = song_folder
-        self.diff = difficulty
         self.chart = ChartLoader.load_chart_from_json(song_folder)
+        self.diff = difficulty
+        self.diff_data = DIFFICULTY_DATA[difficulty.value]
+        # Se actualiza los pixeles por segundo según la dificultad
+        self.pixels_per_ms = self.chart.pixels_per_ms * self.diff_data.pixels_per_ms_mult
 
-        self.player = ChartPlayer(self.chart, game.audio, song_folder, SPAWN_TIME_MS)
+        self.player = ChartPlayer(self.chart, game.audio, song_folder, SPAWN_TIME_MS, diff_data = self.diff_data)
 
         sounds = tuple(self.game.resources.get_sound(f"miss_note_{i}", AudioCategory.SFX)
             for i in range(1, 4)
             )
 
-        self.score_manager = ScoreManager(self.chart.total_notes)
+        self.score_manager = ScoreManager(self.chart.total_notes, self.diff_data)
+
         self.note_input = NoteInputHandler(
             self.player, self.game.note_renderer, self.game.character, sounds,
             self.score_manager
@@ -64,9 +69,9 @@ class PlayState(GameState):
         return self.score_manager.performance <= 0.00
 
     def on_enter(self) -> None:
+        self.game.character.set_position(MIKU_PLAY_POSITION)
         self.game.character.reset()
         self.game.note_renderer.reset_receptors()
-
         self.game.character.update_bpm(self.chart.bpm)
         self.game.character.animator.play("idle",reset=True, loop=True)
         self.player.play()
@@ -92,16 +97,32 @@ class PlayState(GameState):
         self.ui.update(dt)
 
         if self.is_game_over():
-            self.game.state.change(StateID.GAME_OVER, final_score=self.score_manager.score, song_folder=self.song_folder)
+            self.game.state.change(StateID.GAME_OVER, final_score=self.score_manager.score, play_state=self)
 
         if self.player.is_finished:
-            self.game.state.change(StateID.WIN, final_score=self.score_manager.score, song_folder=self.song_folder)
+            self.game.state.change(StateID.WIN, play_state=self)
     
     def handle_input(self, events: list[pygame.event.Event]) -> None:
         if self.game.input.is_action_pressed("ui", "pause"):
             self.player.pause()
-            self.game.state.change(StateID.PAUSE, song_folder=self.song_folder)
+            self.game.state.change(StateID.PAUSE, play_state=self)
             return
+        
+        # (!) DEBUG — quitar cuando no se necesite
+        elif self.game.input.is_key_pressed(pygame.K_F1):
+            self.player.stop()
+            self.game.audio.stop_all_sounds()
+            self.game.audio.stop_music
+            counts = {
+            Judgement.PERFECT: 120,
+            Judgement.GOOD:    30,
+            Judgement.BAD:     10,
+            Judgement.MISS:    5,
+            }
+            for judgement, times in counts.items():
+                for _ in range(times):
+                    self.score_manager.register_tap(judgement)
+            self.game.state.change(StateID.WIN, play_state=self)
         
         # --- Teclas de notas ---
         for action, direction in self.game._PLAY_ACTIONS:
@@ -110,6 +131,8 @@ class PlayState(GameState):
             elif self.game.input.is_action_released("play", action):
                 self.note_input.on_key_release(direction)
 
+
+
     def render(self, surface: pygame.Surface) -> None:
         surface.fill((20, 20, 40))
 
@@ -117,7 +140,7 @@ class PlayState(GameState):
         self.game.note_renderer.draw_notes(
             surface, self.player._active_notes,
             self.player.current_time,
-            self.chart.pixels_per_ms,
+            self.pixels_per_ms,
         )
 
         self.game.note_renderer.draw_receptors(surface)
@@ -160,3 +183,19 @@ class PlayState(GameState):
             text = self.debug_font.render(line, True, (255, 255, 255))
             surface.blit(text, (10, y))
             y += 25
+
+
+    def restart(self) -> None:
+        """Reinicia la partida desde el segundo 0 sin crear una nueva instancia."""
+        self.player.stop()
+        self.player.reset()
+
+        self.score_manager.reset()
+        self.note_input.reset()
+
+        self.game.character.set_position(MIKU_PLAY_POSITION)
+        self.game.character.reset()
+        self.game.note_renderer.reset_receptors()
+        self.game.character.animator.play("idle", reset=True, loop=True)
+
+        self.player.play()
