@@ -8,6 +8,8 @@ from ...util.paths import get_inst_path, get_voices_path
 if TYPE_CHECKING:
     from ...audio import AudioManager
     from ..types import Section
+    from ..difficulty_data import DifficultyData
+
 
 class ChartPlayer:
     """
@@ -25,7 +27,7 @@ class ChartPlayer:
     """
     
     def __init__(self, chart: ChartData, audio_manager: "AudioManager",
-                 song_folder: str, spawn_time_ms: float):
+                 song_folder: str, spawn_time_ms: float, diff_data: "DifficultyData"):
         """
         Args:
             chart: Chart ya parseado y listo para reproducir.
@@ -37,6 +39,7 @@ class ChartPlayer:
         self.chart = chart
         self.audio = audio_manager
         self.spawn_time_ms = spawn_time_ms
+        self.diff_data = diff_data
 
         # Paths resueltos de los archivos de audio
         self._inst_path = str(get_inst_path(song_folder))
@@ -193,7 +196,7 @@ class ChartPlayer:
         """
         missed = []
         for note in self._active_notes:
-            if note.is_missed(self.current_time):
+            if note.is_missed(self.current_time, self.diff_data.judgement_windows):
                 note.on_missed()
                 missed.append(note)
         return missed
