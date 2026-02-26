@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from .game_state import GameState
 from .types import StateID, OverlayType
-from ..database import DifficultyName, Song, Difficulty, Record
+from ..core.database import DifficultyName, Song, Difficulty, Record
 from ..util.paths import get_inst_path
 
 if TYPE_CHECKING:
