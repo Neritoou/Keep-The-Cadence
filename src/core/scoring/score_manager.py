@@ -114,6 +114,9 @@ class ScoreManager:
     # --- PROPIEDADES ---
     @property
     def accuracy(self) -> float:
+        if self.total_notes == 0:
+            return 0.0
+
         perfects = self.judgement_counts.get(Judgement.PERFECT, 0)
         perfects_m = ACCURACY_WEIGHTS[Judgement.PERFECT]
 
