@@ -73,3 +73,5 @@ MIKU_ANIMATIONS_FILES = {
     "DIRECTIONS": "miku_directions.png",
     "MISS_DIRECTIONS": "miku_miss_directions.png",
 }
+
+MAX_RECORDS = 3

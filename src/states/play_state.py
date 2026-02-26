@@ -15,13 +15,17 @@ from ..ui import PerformanceBar, UILabel, UIManager
 
 if TYPE_CHECKING:
     from ..core.game import Game
+    from ..database import DifficultyName
+
 
 
 class PlayState(GameState):
     """Estado principal del juego donde se reproduce el chart."""
-    def __init__(self, game: "Game", song_folder: str):
+    def __init__(self, game: "Game", song_folder: str, song_id: int, difficulty: "DifficultyName"):
         super().__init__(game)
+        self.song_id = song_id
         self.song_folder = song_folder
+        self.diff = difficulty
         self.chart = ChartLoader.load_chart_from_json(song_folder)
 
         self.player = ChartPlayer(self.chart, game.audio, song_folder, SPAWN_TIME_MS)

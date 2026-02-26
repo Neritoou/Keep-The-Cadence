@@ -31,7 +31,7 @@ class Database:
         with self._path.open("w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
 
-    #  RECORDS                                                             #
+    #  RECORDS
     def save_record(self, song_id: int, difficulty_name: DifficultyName, record: Record) -> bool:
         """
         Intenta guardar un record en el top-3 de la dificultad indicada.
@@ -68,7 +68,7 @@ class Database:
 
         return entered
 
-    #  BUILDERS — JSON → modelos
+    #  BUILDERS — JSON -> modelos
     @staticmethod
     def _build_song(raw: dict) -> Song:
         difficulties = {
@@ -100,7 +100,7 @@ class Database:
             date=raw["date"],
         )
 
-    #  SERIALIZACIÓN — modelos → JSON
+    #  SERIALIZACIÓN — modelos -> JSON
     @staticmethod
     def _song_to_dict(song: Song) -> dict:
         return {
@@ -132,10 +132,7 @@ class Database:
             "date":      record.date,
         }
 
-    # ------------------------------------------------------------------ #
-    #  HELPERS                                                             #
-    # ------------------------------------------------------------------ #
-
+    #  --- HELPERS ---
     @staticmethod
     def _is_better(new: Record, existing: Record) -> bool:
         """Retorna True si new supera a existing por (stars DESC, points DESC)."""
