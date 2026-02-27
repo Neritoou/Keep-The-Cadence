@@ -1,5 +1,6 @@
 from ..util.conversors import pygame_key_to_str, str_to_pygame_key
 from .base_config import BaseConfig
+from copy import deepcopy
 
 # Formato interno: {"play": {"move_left": {97, 276}}}
 ControlsConfigType = dict[str, dict[str, set[int]]]
@@ -30,7 +31,13 @@ class ControlsConfig(BaseConfig[ControlsConfigType]):
         # Inicializar BaseConfig
         super().__init__(data=converted)
     
-    # --- CONVERSIÓN JSON ↔ INTERNO ---
+    def get_contexts(self) -> list[str]:
+        return list(self._buffer.keys())
+
+    def get_actions(self, context: str) -> list[str]:
+        return list(self._buffer[context].keys())
+    
+    # --- CONVERSIÓN JSON - INTERNO ---
     
     def _convert_from_json(self, raw: dict) -> ControlsConfigType:
         """
@@ -85,5 +92,5 @@ class ControlsConfig(BaseConfig[ControlsConfigType]):
         """Recarga desde el archivo, descartando cambios no guardados."""
         raw = self._load_json(self.path)
         self._data = self._convert_from_json(raw)
-        self._buffer = self._data.copy()
-        self._modified = False
+        self._buffer = deepcopy(self._data)
+        self._modified_keys.clear()

@@ -1,14 +1,33 @@
 {
     "play": {
-        "left": ["a", "LEFT"],
-        "right": ["d", "RIGHT"],
-        "down": ["s", "DOWN"],
-        "up": ["w", "UP"]
+        "left": [
+            "a"
+        ],
+        "right": [
+            "d"
+        ],
+        "down": [
+            "s"
+        ],
+        "up": [
+            "w"
+        ]
     },
     "ui": {
-        "select": ["RETURN"],
-        "pause": ["p", "SPACE"],
-        "down": ["s", "DOWN"],
-        "up": ["w", "UP"]
+        "select": [
+            "return"
+        ],
+        "pause": [
+            "p",
+            "space"
+        ],
+        "down": [
+            "down",
+            "a"
+        ],
+        "up": [
+            "up",
+            "w"
+        ]
     }
 }
