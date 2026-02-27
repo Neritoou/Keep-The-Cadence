@@ -10,6 +10,7 @@ class StateID(Enum):
     CHART_SETUP = auto()
     SONG_SELECT = auto()
     TRANSITION   = auto()
+    KEYBIND_EDITOR = auto
     # Más estados
 
 # ENUM DE OVERLAYS PARA LOS ESTADOS DEL JUEGO

@@ -70,6 +70,8 @@ class MenuState(GameState):
             self.menu.move_down()
         if self.game.input.is_action_pressed("ui", "select"):
             self.menu.execute_selected()
+        if self.game.input.is_action_pressed("ui","pause"):
+            self.game.state.change_with_transition(StateID.KEYBIND_EDITOR)
             
     
     @property

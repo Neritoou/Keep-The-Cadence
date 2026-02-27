@@ -11,6 +11,9 @@ from .transition_state import TransitionState
 
 from .chart_creator_state import ChartCreatorState
 from .chart_setup_state import ChartSetupState
+
+from .keybind_editor_state import KeybindEditorState
+
 import pygame
 
 if TYPE_CHECKING:
@@ -34,7 +37,8 @@ class StateManager:
             StateID.CHART_CREATOR: ChartCreatorState,
             StateID.CHART_SETUP: ChartSetupState,
             StateID.TRANSITION: TransitionState,
-            StateID.SONG_SELECT: SongSelectState
+            StateID.SONG_SELECT: SongSelectState,
+            StateID.KEYBIND_EDITOR: KeybindEditorState
         }
 
     @property
