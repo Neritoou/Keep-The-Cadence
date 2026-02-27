@@ -11,6 +11,7 @@ from ..core.note_renderer import NoteRenderer
 from ..constants import HIT_LINE_XS, HIT_LINE_Y_UP, SPAWN_TIME_MS, MISS_DISPLAY, MIKU_PLAY_POSITION
 from ..core.database import Database
 from ..util import get_path
+from ..resources import Animation
 
 class Game(GameBase):
     def __init__(self, metadata: GameMetadata) -> None:
@@ -22,6 +23,8 @@ class Game(GameBase):
         self.resources = ResourceManager()
         self.database = Database(get_path("src","core","database","game_data.json"))
         self.input = InputManager(self.controls_config.data)
+        print(self.controls_config.data)
+
         self.state = StateManager(self)
         self.audio = AudioManager()
 
@@ -37,12 +40,21 @@ class Game(GameBase):
             self.resources.get_all_notes(), HIT_LINE_XS, HIT_LINE_Y_UP,
             ScrollDirection.UP, SPAWN_TIME_MS, MISS_DISPLAY, 720
         )
+
+        sheet = self.resources.get_spritesheet("StageNormies")
+        
+        normies = sheet.get_frames_at_col(0)
+        self.bg_normies = Animation({"bg": normies},"bg", 10)
+
         self._PLAY_ACTIONS: list[tuple[str, NoteDirection]] = [
             ("left",  NoteDirection.LEFT),
             ("down",  NoteDirection.DOWN),
             ("up",    NoteDirection.UP),
             ("right", NoteDirection.RIGHT),
         ]
+
+        keys = self.controls_config.get("play", "left")
+        print(keys)  # debería ser {97, 275} o similar
 
 
         # Estado inicial  
