@@ -61,9 +61,6 @@ class PlayState(GameState):
         # (!) Quitar cuando no se necesite el debug
         self.debug_font = pygame.font.Font(None, 24)
 
-        self.game.character.update_bpm(self.chart.bpm)
-        self.player.play()
-
     # (!) Ver donde se va a ubicar
     def is_game_over(self) -> bool:
         return self.score_manager.performance <= 0.00
@@ -72,8 +69,10 @@ class PlayState(GameState):
         self.game.character.set_position(MIKU_PLAY_POSITION)
         self.game.character.reset()
         self.game.note_renderer.reset_receptors()
+        self.game.bg_normies.sync_to_bpm(self.chart.bpm)
         self.game.character.update_bpm(self.chart.bpm)
         self.game.character.animator.play("idle",reset=True, loop=True)
+        self.game.bg_normies.play("bg", reset=True, loop=True)
         self.player.play()
 
     def on_exit(self) -> None:
@@ -87,6 +86,7 @@ class PlayState(GameState):
     def update(self, dt: float) -> None:
         self.player.update(dt)
         self.game.note_renderer.update(dt)
+        self.game.bg_normies.update(dt)
         self.game.character.update(dt)
         self.note_input.update(dt)
 
@@ -131,10 +131,14 @@ class PlayState(GameState):
             elif self.game.input.is_action_released("play", action):
                 self.note_input.on_key_release(direction)
 
-
-
     def render(self, surface: pygame.Surface) -> None:
         surface.fill((20, 20, 40))
+        self.game.bg_normies.draw(surface,(0,0))
+
+        panel = self.game.resources.get_image("stage_panel")
+        prect = panel.get_rect(center = (640,710))
+        surface.blit(panel,prect)
+
 
         # Notas en movimiento
         self.game.note_renderer.draw_notes(
