@@ -46,20 +46,20 @@ class PlayState(GameState):
             )
 
         performance_icon = game.resources.get_spritesheet("PerformanceIcon")
-        self.performance_bar = PerformanceBar("performance_bar", 340, 600, 600, performance_icon, icon_lerp_speed=5.0)
+        self.performance_bar = PerformanceBar("performance_bar", 590, 600, 600, performance_icon, icon_lerp_speed=5.0)
 
         font = game.resources.get_font("Estandar", 30)
 
-        self.score_label = UILabel("score_label", 675, 650, "SCORE: 0", font, "#808080")
-        self.misses_label = UILabel("misses_label", 870, 650, "|   MISSES: 0", font, "#808080")
+        self.score_label = UILabel("score_label", 905, 650, "SCORE: 0", font, "#FFFFFF")
+        self.misses_label = UILabel("misses_label", 1100, 650, "|   MISSES: 0", font, "#FFFFFF")
+
+        self.panel = self.game.resources.get_image("stage_panel")
+        self.panel_rect = self.panel.get_rect(center = (540,710))
 
         self.ui: UIManager = UIManager()
         self.ui.add_element(self.performance_bar)
         self.ui.add_element(self.score_label)
         self.ui.add_element(self.misses_label)
-
-        # (!) Quitar cuando no se necesite el debug
-        self.debug_font = pygame.font.Font(None, 24)
 
     # (!) Ver donde se va a ubicar
     def is_game_over(self) -> bool:
@@ -132,13 +132,8 @@ class PlayState(GameState):
                 self.note_input.on_key_release(direction)
 
     def render(self, surface: pygame.Surface) -> None:
-        surface.fill((20, 20, 40))
         self.game.bg_normies.draw(surface,(0,0))
-
-        panel = self.game.resources.get_image("stage_panel")
-        prect = panel.get_rect(center = (640,710))
-        surface.blit(panel,prect)
-
+        surface.blit(self.panel,self.panel_rect)
 
         # Notas en movimiento
         self.game.note_renderer.draw_notes(
@@ -149,10 +144,9 @@ class PlayState(GameState):
 
         self.game.note_renderer.draw_receptors(surface)
 
-        self.ui.render(surface)
 
         self.game.character.draw(surface)
-        self._draw_debug_info(surface)
+        self.ui.render(surface)
 
     @property
     def overlay_type(self) -> OverlayType:
@@ -161,33 +155,6 @@ class PlayState(GameState):
     @property
     def is_transient(self) -> bool:
         return False
-    
-    # Método Provisional para debug
-    def _draw_debug_info(self, surface: pygame.Surface) -> None:
-        section_info = f"Sección {self.player.current_section.index + 1}"
-        
-        info_lines = [
-            f"Canción: {self.song_folder}",
-            f"Tiempo: {self.player.current_time / 1000:.2f}s / {self.chart.song_duration / 1000:.2f}s",
-            f"Progreso: {self.player.get_progress_percentage():.1f}%",
-            f"BPM: {self.chart.bpm}",
-            f"Notas Activas: {len(self.player._active_notes)}",
-            f"{section_info}",
-            f"Estado: {'REPRODUCIENDO' if self.player.is_playing else 'PAUSADO'}",
-            "",
-            f"Performance: {self.score_manager.performance:.1f}%",
-            f"Score: {self.score_manager.score}",
-            f"Combo: {self.score_manager.combo}",
-            "",
-            "SPACE/p: Pausar",
-        ]
-        
-        y = 10
-        for line in info_lines:
-            text = self.debug_font.render(line, True, (255, 255, 255))
-            surface.blit(text, (10, y))
-            y += 25
-
 
     def restart(self) -> None:
         """Reinicia la partida desde el segundo 0 sin crear una nueva instancia."""
