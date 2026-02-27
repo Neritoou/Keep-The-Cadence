@@ -13,7 +13,7 @@ class NoteRenderer:
     Clase que permite dibujar las notas de una sección.
     Maneja tanto notas TAP como HOLD, con scroll configurable.
     """
-    def __init__(self, notes_data: "NoteDataType", hit_line_xs: tuple[int,int,int,int],
+    def __init__(self, notes_data: "NoteDataType", hit_line_xs: tuple[int,...],
                  hit_line_y: int, scroll_direction: "ScrollDirection", 
                  spawn_time_ms: float, miss_display_ms: float, screen_height: int
                 ):
