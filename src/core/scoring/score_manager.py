@@ -1,24 +1,31 @@
 from ..types import Judgement
-from .score_config import BASE_POINTS, PERFORMANCE_DELTA, HOLD_BONUS_FACTOR, COMBO_THRESHOLDS, STARS, HIT_JUDGEMENTS
+from .score_config import ACCURACY_WEIGHTS, BASE_POINTS, PERFORMANCE_DELTA, HOLD_BONUS_FACTOR, COMBO_THRESHOLDS, STARS, HIT_JUDGEMENTS
+from typing import TYPE_CHECKING
+from ..database import Record
+from datetime import date
+
+if TYPE_CHECKING:
+    from ..difficulty_data import DifficultyData
 
 class ScoreManager:
     """
     Maneja la puntuación, combo, rendimiento y rango durante una partida.
     Recibe los juicios de cada nota y actualiza el estado interno.
     """
-    def __init__(self, total_notes: int):
+    def __init__(self, total_notes: int, diff_data: "DifficultyData"):
         """
         Args:
             total_notes: Total de notas del chart.
+            diff_data: Datos de la dificultad actual de la canción.
         """
-        self._score: int = 0
+        self._diff_data = diff_data
 
+        self._score: int = 0
         self._combo: int = 0           # aciertos consecutivos
         self._max_combo: int = 0       # el combo más alto alcanzado
-
         self._judgement_counts: dict[Judgement, int] = {j: 0 for j in Judgement}
-        
         self._max_possible_score: int = total_notes * BASE_POINTS[Judgement.PERFECT]
+        self.total_notes = total_notes
 
         # Para la barra de rendimiento
         self._performance: float = 50.0     # empieza a la mitad, rango 0-100
@@ -28,11 +35,7 @@ class ScoreManager:
         Registra el resultado de golpear una nota normal (tap).
         
         Args:
-            judgement: Juicio de la nota actual (si el toque fue perfecto,
-                        bueno, malo o fallo).
-
-        Returns:
-            Los puntos ganados en esta nota.
+            judgement: Juicio de la nota actual
         """
         self._judgement_counts[judgement] += 1
         self._update_performance(judgement)
@@ -46,11 +49,14 @@ class ScoreManager:
     
         points = BASE_POINTS[judgement]
         multiplier = self._get_combo_multiplier()
-        gained = int(points * multiplier)
-    
+        gained = int(points * multiplier * self._diff_data.points_multiplier)    
         self._score += gained
 
         return gained
+    
+    def register_ghost_press(self) -> None:
+        """Penaliza performance sin contar como miss de nota."""
+        self._update_performance(Judgement.MISS)
     
     def register_hold_release(self, held_ratio: float) -> int:
         """
@@ -60,17 +66,11 @@ class ScoreManager:
         función solo calcula los puntos extra por cuánto se mantuvo.
         
         Args:
-            held_ratio: porcentaje de la duración en el que
-                        se mantuvo la nota (0.0 - 1.0).
-        
-        Returns
-            Los puntos ganados.
+            held_ratio: porcentaje de la duración en el que se mantuvo la nota (0.0 - 1.0).
         """
         base = BASE_POINTS[Judgement.PERFECT]
         bonus = int(base * held_ratio * HOLD_BONUS_FACTOR)
-
         self._score += bonus
-
         return bonus
     
     def get_stars(self) -> int:
@@ -87,33 +87,48 @@ class ScoreManager:
         
         return stars
     
-    def get_summary(self) -> dict:
-        """Devuelve todos los valores (puntuación, estrellas, mayor combo, juicios contados)."""
-        return {
-            "score":      self._score,
-            "stars":       self.get_stars(),
-            "max_combo":  self._max_combo,
-            "judgements": self.judgement_counts,
-        }
+    def reset(self) -> None:
+        """Reinicia todos los contadores al estado inicial."""
+        self._score    = 0
+        self._combo    = 0
+        self._max_combo = 0
+        self._judgement_counts = {j: 0 for j in Judgement}
+        self._performance = 50.0
     
+    def build_record(self) -> Record:
+        """Devuelve un Record con todos los valores (puntuación, estrellas, mayor combo, juicios contados)."""
 
-
-    # --- HELPERS ---
-    def _get_combo_multiplier(self) -> float:
-        multiplier = 1.0
-        
-        for threshold, value in COMBO_THRESHOLDS:
-            if self._combo >= threshold:
-                multiplier = value
-        return multiplier
+        counts = self.judgement_counts
+        return Record(
+            points    = self.score,
+            perfects  = counts.get(Judgement.PERFECT, 0),
+            goods     = counts.get(Judgement.GOOD,    0),
+            bads      = counts.get(Judgement.BAD,     0),
+            misses    = counts.get(Judgement.MISS,    0),
+            max_combo = self.max_combo,
+            stars     = self.get_stars(),
+            accuracy  = self.accuracy,
+            date      = date.today().isoformat(),
+        )
     
-    def _update_performance(self, judgement: Judgement) -> None:
-        delta = PERFORMANCE_DELTA.get(judgement, 0.0)
-        self._performance = max(0.0, min(100.0, self._performance + delta))
-
-
-
     # --- PROPIEDADES ---
+    @property
+    def accuracy(self) -> float:
+        if self.total_notes == 0:
+            return 0.0
+
+        perfects = self.judgement_counts.get(Judgement.PERFECT, 0)
+        perfects_m = ACCURACY_WEIGHTS[Judgement.PERFECT]
+
+        goods    = self.judgement_counts.get(Judgement.GOOD,0)
+        goods_m = ACCURACY_WEIGHTS[Judgement.GOOD]
+
+        bads     = self.judgement_counts.get(Judgement.BAD,0)
+        bads_m = ACCURACY_WEIGHTS[Judgement.BAD]
+
+        weighted = (perfects * perfects_m) + (goods * goods_m) + (bads * bads_m)
+        return round((weighted / self.total_notes) * 100, 2)
+
     @property
     def score(self) -> int:
         return self._score
@@ -137,3 +152,20 @@ class ScoreManager:
     @property
     def judgement_counts(self) -> dict[Judgement, int]:
         return dict(self._judgement_counts)
+    
+
+    # --- HELPERS ---
+    def _get_combo_multiplier(self) -> float:
+        multiplier = 1.0
+        
+        for threshold, value in COMBO_THRESHOLDS:
+            if self._combo >= threshold:
+                multiplier = value
+        return multiplier
+    
+    def _update_performance(self, judgement: Judgement) -> None:
+        if judgement == Judgement.MISS:
+            delta = self._diff_data.miss_performance   
+        else:
+            delta = PERFORMANCE_DELTA.get(judgement, 0.0)
+        self._performance = max(0.0, min(100.0, self._performance + delta))

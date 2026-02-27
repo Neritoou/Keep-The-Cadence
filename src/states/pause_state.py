@@ -9,12 +9,15 @@ from ..ui import UIMenu, UILabel, UIManager
 
 if TYPE_CHECKING:
     from ..core.game import Game
+    from ..states import PlayState
+
+
 
 class PauseState(GameState):
     """Estado de pausa que se superpone al juego."""
-    def __init__(self, game: "Game", song_folder: str):
+    def __init__(self, game: "Game", play_state: "PlayState"):
         super().__init__(game)
-        self.song_folder = song_folder
+        self.play_state = play_state
 
         screen_center_w = SCREEN_SIZE[0] // 2
 
@@ -84,9 +87,8 @@ class PauseState(GameState):
         self.game.state.exit_current()
     
     def _on_restart(self):
-        """Reinicia la partida."""
-        self.game.state.clear()        
-        self.game.state.change(StateID.PLAY, song_folder=self.song_folder)
+        self.play_state.restart()
+        self.game.state.exit_current()
     
     def _on_menu(self):
         """Vuelve al menú principal."""

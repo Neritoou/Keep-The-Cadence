@@ -1,4 +1,4 @@
-from ...constants import NOTE_SIZE, STANDARD_PADDING, PARTICLE_SPLASH_SIZE, PARTICLE_SPLASH_PADDING, MIKU_ANIMATIONS, MIKU_ANIMATIONS_FILES, PERFORMANCE_ICON_SIZE, MENU_ICON_SIZE
+from ...constants import NOTE_SIZE, STANDARD_PADDING, PARTICLE_SPLASH_SIZE, PARTICLE_SPLASH_PADDING, MIKU_ANIMATIONS, MIKU_ANIMATIONS_FILES, PERFORMANCE_ICON_SIZE, MENU_ICON_SIZE, STARS_ICON_SIZE
 from typing import TYPE_CHECKING
 from ...util import get_asset
 
@@ -21,8 +21,14 @@ def _load_spritesheets(rm: "ResourceManager") -> None:
                         padding=(data["padding_x"], data["padding_y"]),
                 )
 
+        win_data = MIKU_ANIMATIONS["WIN"]
+        rm.load_spritesheet("MIKU_WIN",str(get_asset("spritesheets", "miku", "miku_win.png")),
+                (win_data["width"], win_data["height"]), (win_data["padding_x"], win_data["padding_y"]))
+
         # ICONOS PARA LA BARRA DE RENDIMIENTO
         rm.load_spritesheet("PerformanceIcon", str(get_asset("spritesheets", "performance_icons.png")), PERFORMANCE_ICON_SIZE, STANDARD_PADDING)
 
         # ICONOS PARA EL MENU DE OPCIONES
         rm.load_spritesheet("MenuIcons", str(get_asset("spritesheets", "menu_icons.png")), MENU_ICON_SIZE, STANDARD_PADDING)
+
+        rm.load_spritesheet("Stars",str(get_asset("spritesheets", "stars.png")),STARS_ICON_SIZE, STANDARD_PADDING)

@@ -8,13 +8,14 @@ from ..ui import UIManager, UIMenu, UILabel
 
 if TYPE_CHECKING:
     from ..core.game import Game
+    from ..states import PlayState
 
 class GameOverState(GameState):
     """Estado de Game Over que se superpone al perder la partida."""
-    def __init__(self, game: "Game", final_score: int, song_folder: str):
+    def __init__(self, game: "Game", final_score: int, play_state: "PlayState"):
         super().__init__(game)
 
-        self.song_folder = song_folder
+        self.play_state = play_state
 
         font_title = self.game.resources.get_font("Cursive", 100)
         font_score = self.game.resources.get_font("Estandar", 48)
@@ -84,8 +85,8 @@ class GameOverState(GameState):
     
     def _on_retry(self):
         """Reinicia la partida."""
-        self.game.state.clear()        
-        self.game.state.change(StateID.PLAY, song_folder=self.song_folder)
+        self.play_state.restart()
+        self.game.state.exit_current()
     
     def _on_menu(self):
         """Vuelve al menú principal."""

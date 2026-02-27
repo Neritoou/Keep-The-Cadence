@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING
 from .types import Judgement
-from ..constants import HIT_WINDOW_MS, JUDGEMENT_WINDOWS
 from enum import Enum, auto
 
 if TYPE_CHECKING:
@@ -21,6 +20,10 @@ class Note:
 
     def __lt__(self, other: "Note") -> bool:
         return self.hit_time < other.hit_time
+
+    def reset(self) -> None:
+        """Vuelve la nota a su estado inicial."""
+        self.state = NoteState.PENDING
 
     # --- PROPIEDADES DE ESTADO ---
 
@@ -77,19 +80,24 @@ class Note:
             return current_time <= self.end_time
 
         return True  # PENDING: permanece hasta ser resuelta
+    
+    def is_hittable(self, current_time: float,
+                    judgement_windows: tuple[tuple[float, Judgement], ...]) -> bool:
+        """Devuelve verdadero si la nota debe procesar Input."""
+        hit_window = judgement_windows[-1][0]  # último umbral = ventana total
+        return abs(self.hit_time - current_time) <= hit_window
 
-    def is_hittable(self, current_time: float) -> bool:
-        """Devuelve verdadero si la nota debe procesar Input"""
-        return abs(self.hit_time - current_time) <= HIT_WINDOW_MS
-
-    def is_missed(self, current_time: float) -> bool:
+    def is_missed(self, current_time: float,
+                  judgement_windows: tuple[tuple[float, Judgement], ...]) -> bool:
         """Ventana expirada sin que fuera tocada (solo PENDING)."""
-        return self.state == NoteState.PENDING and current_time >= self.hit_time + HIT_WINDOW_MS
+        hit_window = judgement_windows[-1][0]
+        return self.state == NoteState.PENDING and current_time >= self.hit_time + hit_window
 
-    # --- JUICIO ---
-    def get_judgement(self, current_time: float) -> Judgement:
+    def get_judgement(self, current_time: float,
+                      judgement_windows: tuple[tuple[float, Judgement], ...]) -> Judgement:
+        """Retorna el juicio según las ventanas de la dificultad activa."""
         diff = abs(self.hit_time - current_time)
-        for window, judgement in JUDGEMENT_WINDOWS:
+        for window, judgement in judgement_windows:
             if diff <= window:
                 return judgement
         return Judgement.MISS

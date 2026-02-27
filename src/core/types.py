@@ -121,4 +121,14 @@ class ChartData:
         return result
 
     def reset(self) -> None:
+        """
+        Vuelve al estado Inicial del ChartData.
+        Reseteando las Notas resueltas y volviendo a la primera sección.
+        """
+        # Se toma en cuenta solo desde la primera sección hasta la sección actual + 1
+        # Ya que get_current_notes busca las notas de la sección actual y la sección actual + 1
+        for section in self.sections[:self._section_index + 2]:
+            for note in section.notes:
+                if note.is_resolved:
+                    note.reset()
         self._section_index = 0
