@@ -45,25 +45,25 @@ class PlayState(GameState):
             self.score_manager
             )
 
-        performance_icon = game.resources.get_spritesheet("PerformanceIcon")
-        self.performance_bar = PerformanceBar("performance_bar", 590, 600, 600, performance_icon, icon_lerp_speed=5.0)
+        self._build_ui()
 
-        font = game.resources.get_font("Estandar", 30)
-
-        self.score_label = UILabel("score_label", 905, 650, "SCORE: 0", font, "#FFFFFF")
-        self.misses_label = UILabel("misses_label", 1100, 650, "|   MISSES: 0", font, "#FFFFFF")
-
-        self.panel = self.game.resources.get_image("stage_panel")
-        self.panel_rect = self.panel.get_rect(center = (540,710))
-
-        self.ui: UIManager = UIManager()
-        self.ui.add_element(self.performance_bar)
-        self.ui.add_element(self.score_label)
-        self.ui.add_element(self.misses_label)
-
-    # (!) Ver donde se va a ubicar
     def is_game_over(self) -> bool:
         return self.score_manager.performance <= 0.00
+    
+    def restart(self) -> None:
+        """Reinicia la partida desde el segundo 0 sin crear una nueva instancia."""
+        self.player.stop()
+        self.player.reset()
+
+        self.score_manager.reset()
+        self.note_input.reset()
+
+        self.game.character.set_position(MIKU_PLAY_POSITION)
+        self.game.character.reset()
+        self.game.note_renderer.reset_receptors()
+        self.game.character.animator.play("idle", reset=True, loop=True)
+
+        self.player.play()
 
     def on_enter(self) -> None:
         self.game.character.set_position(MIKU_PLAY_POSITION)
@@ -109,7 +109,7 @@ class PlayState(GameState):
             return
         
         # (!) DEBUG — quitar cuando no se necesite
-        elif self.game.input.is_key_pressed(pygame.K_F1):
+        elif self.game.input.is_key_pressed(pygame.K_g):
             self.player.stop()
             self.game.audio.stop_all_sounds()
             self.game.audio.stop_music
@@ -148,6 +148,23 @@ class PlayState(GameState):
         self.game.character.draw(surface)
         self.ui.render(surface)
 
+    def _build_ui(self) -> None:
+        performance_icon = self.game.resources.get_spritesheet("PerformanceIcon")
+        self.performance_bar = PerformanceBar("performance_bar", 590, 600, 600, performance_icon, icon_lerp_speed=5.0)
+
+        font = self.game.resources.get_font("Estandar", 30)
+
+        self.score_label = UILabel("score_label", 905, 650, "SCORE: 0", font, "#FFFFFF")
+        self.misses_label = UILabel("misses_label", 1100, 650, "|   MISSES: 0", font, "#FFFFFF")
+
+        self.panel = self.game.resources.get_image("stage_panel")
+        self.panel_rect = self.panel.get_rect(center = (540,710))
+
+        self.ui: UIManager = UIManager()
+        self.ui.add_element(self.performance_bar)
+        self.ui.add_element(self.score_label)
+        self.ui.add_element(self.misses_label)
+
     @property
     def overlay_type(self) -> OverlayType:
         return OverlayType.NONE
@@ -155,18 +172,3 @@ class PlayState(GameState):
     @property
     def is_transient(self) -> bool:
         return False
-
-    def restart(self) -> None:
-        """Reinicia la partida desde el segundo 0 sin crear una nueva instancia."""
-        self.player.stop()
-        self.player.reset()
-
-        self.score_manager.reset()
-        self.note_input.reset()
-
-        self.game.character.set_position(MIKU_PLAY_POSITION)
-        self.game.character.reset()
-        self.game.note_renderer.reset_receptors()
-        self.game.character.animator.play("idle", reset=True, loop=True)
-
-        self.player.play()

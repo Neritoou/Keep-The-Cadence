@@ -7,6 +7,7 @@ from .menu_state import MenuState
 from .pause_state import PauseState
 from .game_over_state import GameOverState
 from .win_state import WinState
+from .options_state import OptionsState
 from .transition_state import TransitionState
 
 from .chart_creator_state import ChartCreatorState
@@ -34,6 +35,7 @@ class StateManager:
             StateID.PAUSE: PauseState,
             StateID.GAME_OVER: GameOverState,
             StateID.WIN: WinState,
+            StateID.OPTIONS: OptionsState,
             StateID.CHART_CREATOR: ChartCreatorState,
             StateID.CHART_SETUP: ChartSetupState,
             StateID.TRANSITION: TransitionState,

@@ -10,3 +10,5 @@ def _load_images(rm: "ResourceManager") -> None:
     rm.load_image("Background", str(get_asset("images", "filled_background.png")))
     rm.load_image("SplashArt", str(get_asset("images", "miku_splashart.png")))
     rm.load_image("stage_panel", str(get_asset("images","stage","panel.png")))
+    rm.load_image("Background2", str(get_asset("images", "select_background.png")))
+    rm.load_image("Record", str(get_asset("images", "record_small.png")))
