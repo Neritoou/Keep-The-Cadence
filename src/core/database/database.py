@@ -68,6 +68,13 @@ class Database:
 
         return entered
 
+    def reset_all_records(self) -> None:
+        """Borra todos los récords de todas las canciones y guarda los cambios."""
+        for song in self.songs:
+            for difficulty in song.difficulties.values():
+                difficulty.records.clear()
+        self.save()
+
     #  BUILDERS — JSON -> modelos
     def _build_song(self, raw: dict) -> Song:
         difficulties = {
