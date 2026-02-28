@@ -1,33 +1,66 @@
 import pygame
 from typing import TYPE_CHECKING
+from enfocate import SCREEN_SIZE
 
 from .game_state import GameState
 from .types import StateID, OverlayType
+
 from ..core.database import DifficultyName, Song, Difficulty, Record
 from ..util.paths import get_inst_path
+from ..ui import UIManager, UISlideMenu, UILabel, UISongDetailPanel
 
 if TYPE_CHECKING:
     from ..core.game import Game
-
-DIFF_ORDER = [DifficultyName.EASY, DifficultyName.NORMAL, DifficultyName.HARD]
 
 PREVIEW_DELAY_MS    = 300       # ms de espera antes de arrancar el preview
 PREVIEW_START_SEC   = 30.0      # segundo desde el que empieza
 PREVIEW_DURATION_MS = 30_000    # duración del fragmento en ms (30 s)
 
+DIFF_ORDER = [DifficultyName.EASY, DifficultyName.NORMAL, DifficultyName.HARD]
+
+# Estética
+BG_PANEL  = (18,  12,  38, 210)   # azul marino
+BD_PANEL  = (110, 80, 200, 160)   # violeta
+
+# Controles (hints)
+HINTS = [
+    ("W / S",   "Cancion"),
+    ("A / D",   "Dificultad"),
+    ("ENTER",   "Jugar"),
+    ("ESC",     "Volver"),
+]
 
 class SongSelectState(GameState):
+    """Estado de selección de canción."""
 
     def __init__(self, game: "Game") -> None:
         super().__init__(game)
 
         self._songs      = self.game.database.songs
         self._song_index = 0
-        self._diff_index = 0
+        self._diff_index = 1
 
         self._preview_delay_ms   = 0.0   # acumula ms hasta arrancar el preview
         self._preview_elapsed_ms = 0.0   # acumula ms desde que el preview está sonando
         self._preview_active     = False
+
+        # Dimensiones de la pantalla
+        self.w, self.h = SCREEN_SIZE
+
+        self.stars: list[pygame.Surface]  = [
+            pygame.transform.smoothscale(
+                self.game.resources.get_spritesheet("Stars").get_frame_at(row, 0, trim=True),
+                (30, 30)
+            )
+            for row in range(2)
+        ]
+
+        # Caché de superficies pre-calculadas para evitar recrearlas cada frame
+        self._diff_pill_cache: dict[DifficultyName, pygame.Surface] = {}
+
+        self._build_fonts()
+        self._build_static_surfaces()
+        self._build_ui()
 
     def on_enter(self) -> None:
         self._reset_preview()
@@ -37,21 +70,36 @@ class SongSelectState(GameState):
 
     def handle_input(self, events: list[pygame.event.Event]) -> None:
         if self.game.input.is_action_pressed("ui", "up"):
+            self.songs_menu.move_up()
             self._move_song(-1)
         elif self.game.input.is_action_pressed("ui", "down"):
+            self.songs_menu.move_down()
             self._move_song(1)
-        elif self.game.input.is_action_pressed("ui", "pause"):
-            self.game.state.change_with_transition(StateID.MENU)
-        elif self.game.input.is_key_pressed(pygame.K_LEFT):
+        elif self.game.input.is_action_pressed("ui", "left"):
             self._move_diff(-1)
-        elif self.game.input.is_key_pressed(pygame.K_RIGHT):
+        elif self.game.input.is_action_pressed("ui", "right"):
             self._move_diff(1)
         elif self.game.input.is_action_pressed("ui", "select"):
             self._try_start_game()
+        elif self.game.input.is_action_pressed("ui", "back"):
+            self.game.state.change_with_transition(StateID.MENU)
 
     def update(self, dt: float) -> None:
-        dt_ms = dt * 1000
+        self.count_str.set_text(f"{self._song_index + 1} / {len(self._songs)}")
 
+        current_diff = self._get_current_diff()
+        records = current_diff.records if current_diff else []
+        
+        self.detail_panel.set_data(
+            song=self._get_current_song(),
+            diff_name=self._get_current_diff_name(),
+            records=records
+        )
+
+        self._ui.update(dt)
+        self._update_preview(dt * 1000)
+
+    def _update_preview(self, dt_ms: float) -> None:
         if not self._preview_active:
             # Esperar el delay inicial antes de arrancar
             self._preview_delay_ms += dt_ms
@@ -64,69 +112,73 @@ class SongSelectState(GameState):
                 self._restart_preview()
 
     def render(self, surface: pygame.Surface) -> None:
-        surface.fill((0, 0, 0))
-        w, h = surface.get_size()
-        font_big   = pygame.font.Font(None, 48)
-        font_small = pygame.font.Font(None, 30)
+        # Fondo
+        surface.blit(self.bg, (0,0))
 
-        # Lista de canciones
-        for i, song in enumerate(self._songs):
-            color  = (255, 255, 255) if i == self._song_index else (120, 120, 120)
-            prefix = "> " if i == self._song_index else "  "
-            surface.blit(font_big.render(f"{prefix}{song.name}", True, color), (40, 80 + i * 50))
+        self._ui.render(surface)
 
-        # Dificultad seleccionada
-        diff_name = self.get_current_diff_name()
-        surface.blit(font_big.render(f"< {diff_name.value} >", True, (100, 180, 255)), (w // 2 + 20, 80))
+        # Barra de hints
+        self._draw_hint_bar(surface)
 
-        # Records
-        records = self.get_current_records()
-        y = 160
-        if not records:
-            surface.blit(font_small.render("Sin records", True, (80, 80, 80)), (w // 2 + 20, y))
-        for rank, rec in enumerate(records, 1):
-            stars = "★" * rec.stars + "☆" * (4 - rec.stars)
-            surface.blit(font_small.render(f"#{rank} {stars}  {rec.points:,} pts  {rec.date}", True, (200, 200, 200)), (w // 2 + 20, y))
-            y += 35
+    def _draw_hint_bar(self, surface: pygame.Surface) -> None:
+        bar_y = self.h - 50
+        surface.blit(self._hint_bar, (0, bar_y))
 
-    #  DATOS — CANCIONES
-    def get_songs(self) -> list[Song]:
+        # Centrar todos los hints en la barra
+        gap = 38
+        total_w = sum(k.get_width() + a.get_width() for k, a in self._hint_renders)
+        total_w += gap * (len(self._hint_renders) - 1)
+
+        cur_x = (self.w - total_w) // 2
+        text_y = bar_y + 11
+
+        for k_surf, a_surf in self._hint_renders:
+            surface.blit(k_surf, (cur_x, text_y))
+            cur_x += k_surf.get_width()
+            surface.blit(a_surf, (cur_x, text_y))
+            cur_x += a_surf.get_width() + gap
+
+
+
+    # --- Métodos privados ---
+        #  --- Datos de las canciones ---
+    def _get_songs(self) -> list[Song]:
         """Lista completa de canciones."""
         return self._songs
 
-    def get_current_song(self) -> Song:
+    def _get_current_song(self) -> Song:
         """Canción seleccionada actualmente."""
         return self._songs[self._song_index]
 
-    def get_current_song_index(self) -> int:
+    def _get_current_song_index(self) -> int:
         """Índice de la canción seleccionada."""
         return self._song_index
 
-    #  DATOS — DIFICULTAD
-    def get_diff_order(self) -> list[DifficultyName]:
+        #  --- Datos de las dificultad ---
+    def _get_diff_order(self) -> list[DifficultyName]:
         """Orden de dificultades disponibles."""
         return DIFF_ORDER
 
-    def get_current_diff_name(self) -> DifficultyName:
+    def _get_current_diff_name(self) -> DifficultyName:
         """Nombre de la dificultad activa."""
         return DIFF_ORDER[self._diff_index]
 
-    def get_current_diff(self) -> Difficulty | None:
+    def _get_current_diff(self) -> Difficulty | None:
         """Objeto Difficulty activo, o None si no existe."""
-        return self.get_current_song().get_difficulty(self.get_current_diff_name())
+        return self._get_current_song().get_difficulty(self._get_current_diff_name())
 
-    #  DATOS — RECORDS
-    def get_current_records(self) -> list[Record]:
+        # --- Datos del record ---
+    def _get_current_records(self) -> list[Record]:
         """Records de la dificultad activa. Lista vacía si no hay ninguno."""
-        diff = self.get_current_diff()
+        diff = self._get_current_diff()
         return diff.records if diff else []
 
-    def get_top_record(self) -> Record | None:
+    def _get_top_record(self) -> Record | None:
         """Record #1 de la dificultad activa, o None."""
-        diff = self.get_current_diff()
+        diff = self._get_current_diff()
         return diff.top_record if diff else None
 
-    #  NAVEGACIÓN
+        #  --- Navegación ---
     def _move_song(self, direction: int) -> None:
         self._song_index = (self._song_index + direction) % len(self._songs)
         self._reset_preview()
@@ -135,19 +187,21 @@ class SongSelectState(GameState):
         self._diff_index = (self._diff_index + direction) % len(DIFF_ORDER)
 
     def _try_start_game(self) -> None:
-        diff = self.get_current_diff()
+        diff = self._get_current_diff()
+
         if diff is None:
             return
-        song = self.get_current_song()
+        
+        song = self._get_current_song()
         self.game.audio.stop_music()   # fade antes de cambiar de estado
         self.game.state.change_with_transition(
             StateID.PLAY,
             song_folder=song.name,
             song_id=song.id,
-            difficulty=self.get_current_diff_name(),
+            difficulty=self._get_current_diff_name(),
         )
 
-    #  PREVIEW DE AUDIO
+        # --- PREVIEW DE AUDIO ---
     def _reset_preview(self) -> None:
         """Para el audio y reinicia todos los contadores."""
         self.game.audio.stop_music()
@@ -158,7 +212,7 @@ class SongSelectState(GameState):
     def _start_preview(self) -> None:
         """Arranca el fragmento desde PREVIEW_START_SEC."""
         try:
-            path = str(get_inst_path(self.get_current_song().name))
+            path = str(get_inst_path(self._get_current_song().name))
             self.game.audio.play_music(path, loops=-1, start=PREVIEW_START_SEC, fade_ms=500)
             self._preview_active     = True
             self._preview_elapsed_ms = 0.0
@@ -170,6 +224,83 @@ class SongSelectState(GameState):
         self._preview_elapsed_ms = 0.0
         pygame.mixer.music.set_pos(PREVIEW_START_SEC)
 
+        # --- Construcción de la UI y superficies ---
+    def _build_fonts(self) -> None:
+        self.fonts = {
+            'title': self.game.resources.get_font("Alternative", 90),
+            'song': self.game.resources.get_font("Alternative", 48),
+            'button': self.game.resources.get_font("Estandar", 48),
+            'medium': self.game.resources.get_font("Alternative", 42),
+            'small': self.game.resources.get_font("Alternative", 35)
+        }
+    
+    def _build_static_surfaces(self) -> None:
+        """Pre-genera superficies que no cambian frame a frame."""
+        self.bg = self.game.resources.get_image("Background2")
+
+        self._hint_bar = pygame.Surface((self.w, 50), pygame.SRCALPHA)
+        self._hint_bar.fill((8, 4, 18, 200))
+
+        pygame.draw.line(self._hint_bar, BD_PANEL, (0, 0), (self.w, 0), 1)
+
+        self._hint_renders: list[tuple[pygame.Surface, pygame.Surface]] = []
+        for key_str, action_str in HINTS:
+            k = self.fonts['small'].render(f"[{key_str}]", True, (190, 165, 255))
+            a = self.fonts['small'].render(f" {action_str}", True, (150, 135, 190))
+            self._hint_renders.append((k, a))
+
+    def _build_ui(self) -> None:
+        """Construye todos los elementos de la UI."""
+        self._ui = UIManager()
+
+        # Título y Contador
+        self.title = UILabel("select_title", 60, 40, "Lista de Canciones", self.fonts['title'], (60, 40, 40), center=False)
+        self.count_str = UILabel("song_count", 90, 130, "1 / X", self.fonts['small'], (60, 40, 40), center=False)
+
+        # Menú deslizable de canciones
+        song_options = [
+            (song.name, lambda _i=i: None)
+            for i, song in enumerate(self._songs)
+        ]
+
+        btn_surface = pygame.Surface((600, 80), pygame.SRCALPHA)
+        pygame.draw.rect(btn_surface, (213, 176, 191), btn_surface.get_rect(), border_radius=45)
+
+        sel_surface = pygame.Surface((600, 80), pygame.SRCALPHA)
+        pygame.draw.rect(sel_surface, (213, 176, 191), sel_surface.get_rect(), border_radius=45)
+        pygame.draw.rect(sel_surface, (60, 40, 40), sel_surface.get_rect(), width=5, border_radius=45)
+
+        icon = self.game.resources.get_image("Record")
+        menu_icons: list[pygame.Surface] = []
+
+        for song in song_options:
+            menu_icons.append(icon)
+
+        self.songs_menu = UISlideMenu(
+            "songs_menu", 520, 180, song_options, btn_surface, self.fonts['button'],
+            (60, 40, 40), selected_surface=sel_surface, content_padding=30, spacing=15, hidden_offset=110,
+            icons=menu_icons, show_selected_icon=True
+        )
+
+        # Sprites de estrellas para el panel (evitamos cargarlas de nuevo dentro del panel)
+        stars_spritesheet = self.game.resources.get_spritesheet("Stars")
+        stars_sprites = [
+            pygame.transform.smoothscale(
+                stars_spritesheet.get_frame_at(row, 0, trim=True), (30, 30)
+            ) for row in range(2)
+        ]
+
+        self.detail_panel = UISongDetailPanel(
+            "song_detail_panel", 590, 150, 640, 480, self.fonts,
+            stars_sprites, BG_PANEL, BD_PANEL
+        )
+
+        # Agregamos todo al manager
+        self._ui.add_element(self.title)
+        self._ui.add_element(self.count_str)
+        self._ui.add_element(self.songs_menu)
+        self._ui.add_element(self.detail_panel)
+    
     @property
     def overlay_type(self) -> OverlayType:
         return OverlayType.NONE
