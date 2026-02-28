@@ -99,8 +99,8 @@ class PauseState(GameState):
         self.game.state.exit_current()
     
     def _on_restart(self):
-        self.play_state.restart()
         self.game.state.exit_current()
+        self.play_state.restart()
     
     def _on_menu(self):
         """Vuelve al menú principal."""
