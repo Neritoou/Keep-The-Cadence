@@ -14,6 +14,7 @@ from .chart_creator_state import ChartCreatorState
 from .chart_setup_state import ChartSetupState
 
 from .keybind_editor_state import KeybindEditorState
+from .countdown_state import CountdownState
 
 import pygame
 
@@ -40,7 +41,8 @@ class StateManager:
             StateID.CHART_SETUP: ChartSetupState,
             StateID.TRANSITION: TransitionState,
             StateID.SONG_SELECT: SongSelectState,
-            StateID.KEYBIND_EDITOR: KeybindEditorState
+            StateID.KEYBIND_EDITOR: KeybindEditorState,
+            StateID.COUNTDOWN: CountdownState
         }
 
     @property

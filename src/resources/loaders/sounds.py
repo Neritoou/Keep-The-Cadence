@@ -6,6 +6,12 @@ if TYPE_CHECKING:
         from ..resource_manager import ResourceManager
 
 def _load_sounds(rm: "ResourceManager"):
-        rm.load_sound("miss_note_1",AudioCategory.SFX,str(get_asset("sounds","miku","miss_note_1.ogg")))
-        rm.load_sound("miss_note_2",AudioCategory.SFX,str(get_asset("sounds","miku","miss_note_2.ogg")))
-        rm.load_sound("miss_note_3",AudioCategory.SFX,str(get_asset("sounds","miku","miss_note_3.ogg")))
+        # MISS SOUNDS
+        for i in range(1, 4):
+            rm.load_sound(f"miss_note_{i}", AudioCategory.SFX, str(get_asset("sounds", "miku", f"miss_note_{i}.ogg")))
+
+        # COUNTDOWN SOUNDS
+        for i in range(0, 4):
+            rm.load_sound(f"countdown_{i}", AudioCategory.SFX, str(get_asset("sounds", "countdown", f"countdown_{i}.ogg")))
+
+
