@@ -1,5 +1,8 @@
 import pygame
-from typing import Dict
+from typing import Dict, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..config import ControlsConfig
 
 
 # Diccionario estático global, se calcula una sola vez al importar
@@ -27,4 +30,7 @@ def pygame_key_to_str(pygame_key: int) -> str:
         return PYGAME_KEY_TO_NAME[pygame_key]
     except KeyError:
         raise ValueError(f"Tecla Pygame no válida: '{pygame_key}'")
-
+    
+def get_hint_key(controller: "ControlsConfig", action: str) -> str:
+    keys = controller.get("ui", action)  # set[int]
+    return pygame_key_to_str(min(keys)).upper() if keys else "?"
