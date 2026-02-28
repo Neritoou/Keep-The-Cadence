@@ -17,17 +17,28 @@
         "select": [
             "return"
         ],
+        "back": [
+            "escape"
+        ],
         "pause": [
             "p",
             "space"
         ],
         "down": [
             "down",
-            "a"
+            "s"
         ],
         "up": [
             "up",
             "w"
+        ],
+        "left": [
+            "a",
+            "left"
+        ],
+        "right": [
+            "d",
+            "right"
         ]
     }
 }
