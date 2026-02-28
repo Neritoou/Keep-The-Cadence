@@ -6,6 +6,7 @@ class StateID(Enum):
     PAUSE = auto()
     GAME_OVER = auto()
     WIN = auto()
+    OPTIONS = auto()
     CHART_CREATOR = auto()
     CHART_SETUP = auto()
     SONG_SELECT = auto()
