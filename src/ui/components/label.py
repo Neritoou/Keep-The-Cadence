@@ -27,6 +27,8 @@ class UILabel(UIElement):
         self.font = font
         self.text = text
         self.color = pygame.Color(color)
+        self._last_alpha: int = -1  # fuerza el set en el primer frame
+
 
         # Superficie inicial
         self.text_surface = font.render(self.text, True, self.color)
@@ -72,10 +74,12 @@ class UILabel(UIElement):
     def render(self, surface: pygame.Surface) -> None:
         if not self.visible:
             return
-        
-        self.text_surface.set_alpha(int(self.alpha))
-        
-        # Se dibuja el elemento estático sobre la superficie de la pantalla
+
+        current = int(self.alpha)
+        if current != self._last_alpha:
+            self.text_surface.set_alpha(current)
+            self._last_alpha = current
+
         surface.blit(self.text_surface, self.rect)
 
     def update(self, dt: float) -> None:
