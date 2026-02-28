@@ -22,7 +22,7 @@ class Animation:
         base_fps: int = 8,
         loop: bool = True,
         fps_map: dict[str, int] | None = None,
-        bpm: float | None = None
+        bpm: float | None = None,
     ) -> None:
         """
         Inicializa el sistema de animación.

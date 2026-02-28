@@ -81,8 +81,10 @@ class Character:
         match self.receptor.state:
             case CharacterReceptorState.HOLD_HIT:
                 self.receptor.state = CharacterReceptorState.RELEASE_HIT
+                self.receptor.timer = 0.0
             case CharacterReceptorState.HOLD_MISS:
                 self.receptor.state = CharacterReceptorState.RELEASE_MISS
+                self.receptor.timer = 0.0
 
     def play_win(self) -> None:
         self.receptor.state = CharacterReceptorState.WIN
