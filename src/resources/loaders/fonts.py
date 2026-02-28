@@ -5,6 +5,7 @@ if TYPE_CHECKING:
         from ..resource_manager import ResourceManager
 
 def _load_fonts(rm: "ResourceManager") -> None:
-        different_sizes = {30, 48, 90, 100, 130}
+        different_sizes = {30, 35, 42, 48, 80, 90, 100, 130}
         rm.load_font("Estandar", str(get_asset("fonts","CuteLove.ttf")), different_sizes)
         rm.load_font("Cursive", str(get_asset("fonts","PlaylistScript.otf")), different_sizes)
+        rm.load_font("Alternative", str(get_asset("fonts","Papernotes.otf")), different_sizes)
