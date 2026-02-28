@@ -1,6 +1,6 @@
 import pygame
 from typing import TYPE_CHECKING
-
+from enfocate import SCREEN_SIZE
 from .game_state import GameState
 from .types import OverlayType, StateID
 from ..resources.types import AudioCategory
@@ -8,9 +8,8 @@ from ..resources.types import AudioCategory
 from ..core.chart_player import ChartLoader, ChartPlayer
 from ..core.note_input_handler import NoteInputHandler
 from ..core.scoring import ScoreManager
-from ..core.types import Judgement
+from ..core.types import Judgement, NoteDirection
 from ..core.difficulty_data import DIFFICULTY_DATA
-from ..core.receptor_state import CharacterReceptorState
 
 from ..constants import SPAWN_TIME_MS, MIKU_PLAY_POSITION
 from ..ui import PerformanceBar, UILabel, UIManager
@@ -48,6 +47,12 @@ class PlayState(GameState):
 
         self._build_ui()
 
+    def start_game(self) -> None:
+        """Llamado por CountdownState al terminar. Arranca el juego de verdad."""
+        self.game.note_renderer.reset_receptors()
+        self.performance_bar.snap()
+        self.player.play()
+
     def is_game_over(self) -> bool:
         return self.score_manager.performance <= 0.00
     
@@ -55,26 +60,27 @@ class PlayState(GameState):
         """Reinicia la partida desde el segundo 0 sin crear una nueva instancia."""
         self.player.stop()
         self.player.reset()
-
         self.score_manager.reset()
+        self.performance_bar.set_performance(self.score_manager.performance_ratio)
+        self.performance_bar.snap()
         self.note_input.reset()
-
         self.game.character.set_position(MIKU_PLAY_POSITION)
         self.game.character.reset()
-        self.game.note_renderer.reset_receptors()
+        self.game.bg_normies.reset()
+        self.game.bg_normies.play("bg", reset=True, loop=True)
         self.game.character.animator.play("idle", reset=True, loop=True)
-
-        self.player.play()
+        self.game.note_renderer.reset_receptors()
+        self.game.state.change(StateID.COUNTDOWN, play_state=self)
 
     def on_enter(self) -> None:
         self.game.character.set_position(MIKU_PLAY_POSITION)
         self.game.character.reset()
-        self.game.note_renderer.reset_receptors()
+        self.game.bg_normies.reset()
         self.game.bg_normies.sync_to_bpm(self.chart.bpm)
         self.game.character.update_bpm(self.chart.bpm)
         self.game.character.animator.play("idle",reset=True, loop=True)
         self.game.bg_normies.play("bg", reset=True, loop=True)
-        self.player.play()
+        self.game.state.change(StateID.COUNTDOWN, play_state=self)
 
     def on_exit(self) -> None:
         self.player.stop()
@@ -98,13 +104,10 @@ class PlayState(GameState):
         self.ui.update(dt)
 
         if self.is_game_over():
-            in_miss = self.game.character.receptor.state in (
-                CharacterReceptorState.HOLD_MISS, CharacterReceptorState.RELEASE_MISS
-                )
-            if in_miss and self.game.character.animator.is_last_frame():
-                self.game.state.change(StateID.GAME_OVER, final_score=self.score_manager.score, play_state=self)
-                return
-
+            direction = self.game.character.receptor.direction or NoteDirection.UP
+            self.game.state.change(StateID.GAME_OVER,direction=direction, play_state=self)
+            return
+            
         if self.player.is_finished:
             self.game.state.change(StateID.WIN, play_state=self)
     
