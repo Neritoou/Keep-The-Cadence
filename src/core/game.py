@@ -23,7 +23,6 @@ class Game(GameBase):
         self.resources = ResourceManager()
         self.database = Database(get_path("src","core","database","game_data.json"))
         self.input = InputManager(self.controls_config.data)
-        print(self.controls_config.data)
 
         self.state = StateManager(self)
         self.audio = AudioManager()
@@ -52,10 +51,6 @@ class Game(GameBase):
             ("up",    NoteDirection.UP),
             ("right", NoteDirection.RIGHT),
         ]
-
-        keys = self.controls_config.get("play", "left")
-        print(keys)  # debería ser {97, 275} o similar
-
 
         # Estado inicial  
         self.state.change(StateID.MENU)
