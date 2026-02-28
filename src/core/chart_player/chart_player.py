@@ -129,7 +129,8 @@ class ChartPlayer:
         if self._voice_channel:
             self._voice_channel.stop()
             self._voice_channel = None
-   
+
+        self.audio.stop_all_sounds()
         self._playing = False
 
     def reset(self) -> None:
@@ -220,3 +221,7 @@ class ChartPlayer:
         if self.chart.song_duration == 0:
             return 100.0
         return (self.current_time / self.chart.song_duration) * 100
+    
+
+
+
