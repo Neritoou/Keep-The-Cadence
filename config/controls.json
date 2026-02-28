@@ -1,28 +1,34 @@
 {
     "play": {
         "left": [
+            "left",
             "a"
         ],
         "right": [
-            "d"
+            "d",
+            "right"
         ],
         "down": [
+            "down",
             "s"
         ],
         "up": [
+            "up",
             "w"
         ]
     },
     "ui": {
         "select": [
+            "z",
             "return"
         ],
         "back": [
+            "b",
             "escape"
         ],
         "pause": [
-            "p",
-            "space"
+            "space",
+            "p"
         ],
         "down": [
             "down",
@@ -33,8 +39,8 @@
             "w"
         ],
         "left": [
-            "a",
-            "left"
+            "left",
+            "a"
         ],
         "right": [
             "d",

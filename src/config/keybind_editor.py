@@ -44,7 +44,7 @@ class KeybindEditor:
         Devuelve lista de tamaño fijo max_keys_for_action.
         Los slots vacíos se rellenan con None.
         """
-        keys  = list(self._config.get(context, action))
+        keys  = sorted(self._config.get(context, action))
         slots = keys + [None] * (self._config.max_keys_for_action - len(keys))
         return slots[:self._config.max_keys_for_action]
 

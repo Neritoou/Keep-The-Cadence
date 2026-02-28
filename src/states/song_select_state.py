@@ -7,6 +7,7 @@ from .types import StateID, OverlayType
 
 from ..core.database import DifficultyName, Song, Difficulty, Record
 from ..util.paths import get_inst_path
+from ..util.conversors import get_hint_key
 from ..ui import UIManager, UISlideMenu, UILabel, UISongDetailPanel
 
 if TYPE_CHECKING:
@@ -22,13 +23,6 @@ DIFF_ORDER = [DifficultyName.EASY, DifficultyName.NORMAL, DifficultyName.HARD]
 BG_PANEL  = (18,  12,  38, 210)   # azul marino
 BD_PANEL  = (110, 80, 200, 160)   # violeta
 
-# Controles (hints)
-HINTS = [
-    ("W / S",   "Cancion"),
-    ("A / D",   "Dificultad"),
-    ("ENTER",   "Jugar"),
-    ("ESC",     "Volver"),
-]
 
 class SongSelectState(GameState):
     """Estado de selección de canción."""
@@ -244,7 +238,7 @@ class SongSelectState(GameState):
         pygame.draw.line(self._hint_bar, BD_PANEL, (0, 0), (self.w, 0), 1)
 
         self._hint_renders: list[tuple[pygame.Surface, pygame.Surface]] = []
-        for key_str, action_str in HINTS:
+        for key_str, action_str in self._build_hints():
             k = self.fonts['small'].render(f"[{key_str}]", True, (190, 165, 255))
             a = self.fonts['small'].render(f" {action_str}", True, (150, 135, 190))
             self._hint_renders.append((k, a))
@@ -300,6 +294,15 @@ class SongSelectState(GameState):
         self._ui.add_element(self.count_str)
         self._ui.add_element(self.songs_menu)
         self._ui.add_element(self.detail_panel)
+    
+    def _build_hints(self) -> list[tuple[str, str]]:
+        k = self.game.controls_config
+        return [
+            (f"{get_hint_key(k,'up')} / {get_hint_key(k,'down')}",    "Cancion"),
+            (f"{get_hint_key(k,'left')} / {get_hint_key(k,'right')}", "Dificultad"),
+            (get_hint_key(k,"select"),"Jugar"),
+            (get_hint_key(k,"back"),"Volver"),
+        ]
     
     @property
     def overlay_type(self) -> OverlayType:

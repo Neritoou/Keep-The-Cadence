@@ -20,7 +20,8 @@ class UIMenu(UIElement):
             center_text: bool = False,
             normal_color: "ColorValue" = (255, 255, 255),
             selected_color: "ColorValue" = (255, 215, 0),
-            visible: bool = True
+            visible: bool = True,
+            alpha: int = 255
             ):
         """
         Args:
@@ -47,7 +48,7 @@ class UIMenu(UIElement):
 
         for i, option_text in enumerate(option_texts):
             label = UILabel(f"{name}_option_{i}", x, (y + i * spacing),
-                            option_text, font, normal_color, center=center_text)
+                            option_text, font, normal_color, center=center_text, alpha=alpha)
             self._labels.append(label)
 
         # Estado interno
@@ -60,13 +61,13 @@ class UIMenu(UIElement):
         
         # Cursor de seleccion
         self._marker = UILabel(f"{name}_marker", marker_x, y,
-                               marker, font, selected_color, center=False)
+                               marker, font, selected_color, center=False, alpha=alpha)
 
         marker_space = self._marker.rect.width + 20
         width = marker_space + max_label_width
         height = len(options) * spacing
 
-        super().__init__(name, x, y, width, height, visible=visible)
+        super().__init__(name, x, y, width, height, visible=visible, alpha=alpha)
 
         self._update_selection()
 
@@ -102,14 +103,8 @@ class UIMenu(UIElement):
     # --- MÉTODOS ABSTRACTOS DE UIElement ---
     def update(self, dt: float) -> None:
         super().update(dt)
-
         for label in self._labels:
-            label.visible = self.visible
-            label.alpha = self.alpha
             label.update(dt)
-
-        self._marker.visible = self.visible
-        self._marker.alpha = self.alpha
         self._marker.update(dt)
 
     def render(self, surface: pygame.Surface) -> None:
@@ -132,3 +127,8 @@ class UIMenu(UIElement):
         
         # Mover cursor a la opción seleccionada
         self._marker.rect.y = self._labels[self._selected_index].rect.y
+
+    def fade_to_all(self, target: int, duration: float) -> None:
+        """Aplica fade a todos los labels internos y el cursor."""
+        for label in (*self._labels, self._marker):
+            label.fade_to(target, duration)

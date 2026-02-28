@@ -77,8 +77,8 @@ class PerformanceBar(UIElement):
             performance_ratio: Valor normalizado entre 0.0 y 1.0
         """
         self._target_ratio = max(0.0, min(1.0, performance_ratio))
-
-        self._snap(self._target_ratio)
+        if self._target_ratio <= 0.0:
+            self.snap(0.0)
 
 
     def update(self, dt: float) -> None:
@@ -171,7 +171,7 @@ class PerformanceBar(UIElement):
             border_radius=6
         )
 
-    def _snap(self, target_ratio: float) -> None:
-        if target_ratio <= 0.0:
-            self._display_ratio = 0.0
-            self._current_frame_index = self._get_frame_index(0.0)
+    def snap(self, target_ratio: float | None = None) -> None:
+        ratio = target_ratio if target_ratio is not None else self._target_ratio
+        self._display_ratio = ratio
+        self._current_frame_index = self._get_frame_index(ratio)
