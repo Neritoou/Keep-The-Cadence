@@ -1,11 +1,11 @@
 import pygame
-from enfocate import SCREEN_SIZE, COLORS
+from enfocate import SCREEN_SIZE
 
 from typing import TYPE_CHECKING
 from .game_state import GameState
 from .types import StateID, OverlayType
 
-from ..ui import UIMenu, UILabel, UIManager
+from ..ui import UIButtonMenu, UILabel, UIManager
 
 if TYPE_CHECKING:
     from ..core.game import Game
@@ -19,27 +19,7 @@ class PauseState(GameState):
         super().__init__(game)
         self.play_state = play_state
 
-        screen_center_w = SCREEN_SIZE[0] // 2
-
-        font_title = self.game.resources.get_font("Cursive", 100)
-        font_menu = self.game.resources.get_font("Estandar", 48)
-        
-        self.title = UILabel("pause_title", screen_center_w, 170,
-            "Pausa", font_title, COLORS["coral_pastel"])
-
-        options = [
-            ("CONTINUAR", self._on_resume),
-            ("REINICIAR", self._on_restart),
-            ("VOLVER AL MENU", self._on_menu),
-        ]
-        
-        self.menu = UIMenu("pause_menu", screen_center_w, 360,
-            options, font_menu, spacing=80, center_text=True
-        )
-
-        self.ui: UIManager = UIManager()
-        self.ui.add_element(self.title)
-        self.ui.add_element(self.menu)
+        self._build_ui()
     
     def on_enter(self) -> None:
         pass
@@ -79,6 +59,38 @@ class PauseState(GameState):
     def is_transient(self) -> bool:
         return False
     
+    def _build_ui(self) -> None:
+        screen_center_w = SCREEN_SIZE[0] // 2
+
+        font_title = self.game.resources.get_font("Cursive", 130)
+        font_menu = self.game.resources.get_font("Estandar", 48)
+        
+        self.title = UILabel("pause_title", screen_center_w, 100,
+            "Pausa", font_title, "#8af2f2")
+
+        options = [
+            ("Continuar", self._on_resume),
+            ("Reiniciar", self._on_restart),
+            ("Opciones", self._on_options),
+            ("Otra cancion", self._on_menu)
+        ]
+        
+        btn_surface = pygame.Surface((350, 60), pygame.SRCALPHA)
+        pygame.draw.rect(btn_surface, (255, 210, 210, 200), btn_surface.get_rect(), border_radius=45)
+
+        sel_surface = pygame.Surface((355, 65), pygame.SRCALPHA)
+        pygame.draw.rect(sel_surface, (255, 210, 210, 200), sel_surface.get_rect(), border_radius=45)
+        pygame.draw.rect(sel_surface, (255,255,255), sel_surface.get_rect(), width=5, border_radius=45) 
+
+        self.menu = UIButtonMenu("pause_menu", screen_center_w, 330,
+            options, btn_surface, sel_surface, font_menu, (255,255,255),
+            center_x=True, spacing=20
+        )
+
+        self.ui: UIManager = UIManager()
+        self.ui.add_element(self.title)
+        self.ui.add_element(self.menu)
+
 
 
     # --- Callbacks ---
@@ -91,6 +103,11 @@ class PauseState(GameState):
         self.game.state.exit_current()
     
     def _on_menu(self):
+        """Vuelve al menú principal."""
+        self.game.state.clear()
+        self.game.state.change(StateID.SONG_SELECT)
+
+    def _on_options(self):
         """Vuelve al menú principal."""
         self.game.state.clear()
         self.game.state.change(StateID.MENU)
