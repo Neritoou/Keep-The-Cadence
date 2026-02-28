@@ -3,7 +3,7 @@ from typing import Union
 
 import pygame
 
-ColorValue = Union[pygame.Color, tuple[int, int, int], str]
+ColorValue = Union[pygame.Color, tuple[int, int, int], str, tuple[int, int, int, int]]
 
 class UIElement(ABC):
     """Clase base abstracta para todos los elementos de la interfaz de usuario."""

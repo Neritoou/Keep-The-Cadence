@@ -21,7 +21,8 @@ class UISlideMenu(UIElement):
         selected_surface: pygame.Surface | None = None,
         content_padding: int = 20, spacing: int = 20, hidden_offset: int = 150,
         lerp_speed: float = 10.0, anchor_left: bool = False,
-        icons: list[pygame.Surface | None] | None = None
+        icons: list[pygame.Surface] | None = None,
+        show_selected_icon: bool = False
     ):
         """
         Args:
@@ -39,11 +40,14 @@ class UISlideMenu(UIElement):
             anchor_left: Si es True, los botones se ancla al borde izquierdo y se
                         desliza hacia la derecha.
             icons: Lista opcional de surfaces para los íconos (None = sin ícono).
+            show_selected_icon: Cuando es True muestra el icono solo del boton
+                        seleccionado.        
         """
         bw, bh = button_surface.get_size()
         total_height = (bh + spacing) * len(options)
 
         menu_x = float(anchor_x) if anchor_left else float(anchor_x - bw)
+
         super().__init__(name, int(menu_x), y, bw, total_height, visible=True)
 
         self._callbacks: list[Callable[[], None]] = [opt[1] for opt in options]
@@ -62,7 +66,7 @@ class UISlideMenu(UIElement):
             btn = UISlideButton(
                 f"{name}_btn_{i}", anchor_x, btn_y, btn_surface, sel_surface,
                 text, font, text_color, hidden_offset, lerp_speed, anchor_left,
-                icon, content_padding
+                icon, show_selected_icon, content_padding
             )
             self._buttons.append(btn)
 

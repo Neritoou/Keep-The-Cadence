@@ -12,7 +12,8 @@ class UISlideButton(UIElement):
         font: Optional[pygame.font.Font] = None,
         text_color: ColorValue = (0, 0, 0), hidden_offset: int = 150,
         lerp_speed: float = 10.0, anchor_left: bool = False,
-        icon: Optional[pygame.Surface] = None, content_padding: int = 12
+        icon: Optional[pygame.Surface] = None, show_selected_icon: bool = False,
+        content_padding: int = 12
     ):
         """
         Args:
@@ -27,6 +28,8 @@ class UISlideButton(UIElement):
             anchor_left: Si es True, los botones se ancla al borde izquierdo y se
                         desliza hacia la derecha.
             icon: Surface de un ícono opcional para el botón.
+            show_selected_icon: Cuando es True muestra el icono solo del boton
+                        seleccionado.
             content_padding: Distancia desde el borde interior del botón al
                         contenido (ícono/texto).
         
@@ -49,11 +52,12 @@ class UISlideButton(UIElement):
         self.selected_surface = selected_surface
         self._lerp_speed = lerp_speed
         self._anchor_left = anchor_left
+        self._show_selected_icon = show_selected_icon
 
         self._current_x: float = self._rest_x
         self._is_selected: bool = False
 
-        self._icon = icon
+        self._icon = pygame.transform.smoothscale(icon, (h-20, h-20)) if icon else None
         self._icon_offset_x = 0
         self._icon_offset_y = 0
         
@@ -83,16 +87,16 @@ class UISlideButton(UIElement):
             # Contenido pegado a la derecha (para que no se oculte al salir a la izquierda)
             current_x_offset = w - content_padding
             
-            if self._label:
-                current_x_offset -= self._label.rect.width
-                self._label_offset_x = current_x_offset
-                self._label_offset_y = (h - self._label.rect.height) // 2
-                current_x_offset -= content_padding
-                
             if self._icon:
                 current_x_offset -= self._icon.get_width()
                 self._icon_offset_x = current_x_offset
                 self._icon_offset_y = (h - self._icon.get_height()) // 2
+
+            if self._label:
+                current_x_offset -= self._label.rect.width + content_padding // 2 if self._icon else self._label.rect.width
+                self._label_offset_x = current_x_offset
+                self._label_offset_y = (h - self._label.rect.height) // 2
+                current_x_offset -= content_padding
 
         self._sync_positions()
 
@@ -141,7 +145,7 @@ class UISlideButton(UIElement):
 
         surface.blit(current_btn_surface, self.rect)
 
-        if self._icon:
+        if self._icon and (not self._show_selected_icon or self._is_selected):
             surface.blit(self._icon, (self.rect.x + self._icon_offset_x, self.rect.y + self._icon_offset_y))
 
         if self._label:
