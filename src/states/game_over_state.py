@@ -11,6 +11,7 @@ from ..constants import MIKU_PLAY_POSITION
 if TYPE_CHECKING:
     from ..core.game import Game
     from ..states import PlayState
+    from ..core.types import NoteDirection
 
 # --- Timings ---
 _ZOOM_DURATION_MS = 1000.0  # Duración del zoom hacia Miku en ms
@@ -33,9 +34,10 @@ class GameOverState(GameState):
         2. HOLD: pausa con zoom fijo para efecto dramático.
         3. UI: aparece el overlay oscuro con título, puntuación y menú con fade in.
     """
-    def __init__(self, game: "Game", final_score: int, play_state: "PlayState"):
+    def __init__(self, game: "Game", play_state: "PlayState", direction: "NoteDirection"):
         super().__init__(game)
         self.play_state = play_state
+        self._final_direction = direction
 
         self._phase       = _Phase.ZOOM
         self._phase_timer = 0.0   # Acumulador de tiempo en ms para la fase actual
@@ -60,7 +62,7 @@ class GameOverState(GameState):
 
         # --- UI: se crea oculta y se revela con fade en fase UI ---
         self.title      = UILabel("game_title",    cx, 150, "Game Over :(", font_title, (255, 0, 0), visible=False, alpha=0)
-        self.score_text = UILabel("final_score",   cx, 290, f"Puntuacion final: {final_score}", font_score, visible=False, alpha=0)
+        self.score_text = UILabel("final_score",   cx, 290, f"Puntuacion final: {self.play_state.score_manager.score}", font_score, visible=False, alpha=0)
         self.menu       = UIMenu("game_over_menu", cx, 410, options, font_menu, spacing=70, center_text=True, visible=False, alpha=0)
 
         self.ui = UIManager()
@@ -79,6 +81,8 @@ class GameOverState(GameState):
     def on_enter(self) -> None:
         self.game.audio.stop_music()
         self.game.audio.stop_all_sounds()
+        self.game.character.press_miss(self._final_direction)
+        self.game.character.animator.go_to_frame(len(self.game.character.animator.frames) - 1)
 
     def on_exit(self) -> None:
         pass
@@ -177,8 +181,8 @@ class GameOverState(GameState):
         self.game._stop_context()
 
     def _on_retry(self):
-        self.play_state.restart()
         self.game.state.exit_current()
+        self.play_state.restart()
 
     def _on_menu(self):
         self.game.state.clear()
