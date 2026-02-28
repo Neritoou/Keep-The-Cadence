@@ -10,6 +10,7 @@ from ..core.note_input_handler import NoteInputHandler
 from ..core.scoring import ScoreManager
 from ..core.types import Judgement
 from ..core.difficulty_data import DIFFICULTY_DATA
+from ..core.receptor_state import CharacterReceptorState
 
 from ..constants import SPAWN_TIME_MS, MIKU_PLAY_POSITION
 from ..ui import PerformanceBar, UILabel, UIManager
@@ -97,7 +98,12 @@ class PlayState(GameState):
         self.ui.update(dt)
 
         if self.is_game_over():
-            self.game.state.change(StateID.GAME_OVER, final_score=self.score_manager.score, play_state=self)
+            in_miss = self.game.character.receptor.state in (
+                CharacterReceptorState.HOLD_MISS, CharacterReceptorState.RELEASE_MISS
+                )
+            if in_miss and self.game.character.animator.is_last_frame():
+                self.game.state.change(StateID.GAME_OVER, final_score=self.score_manager.score, play_state=self)
+                return
 
         if self.player.is_finished:
             self.game.state.change(StateID.WIN, play_state=self)
