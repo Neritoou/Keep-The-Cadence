@@ -9,6 +9,7 @@ from .game_over_state import GameOverState
 from .win_state import WinState
 from .options_state import OptionsState
 from .transition_state import TransitionState
+from .credits_state import CreditsState
 
 from .chart_creator_state import ChartCreatorState
 from .chart_setup_state import ChartSetupState
@@ -42,7 +43,8 @@ class StateManager:
             StateID.TRANSITION: TransitionState,
             StateID.SONG_SELECT: SongSelectState,
             StateID.KEYBIND_EDITOR: KeybindEditorState,
-            StateID.COUNTDOWN: CountdownState
+            StateID.COUNTDOWN: CountdownState,
+            StateID.CREDITS: CreditsState
         }
 
     @property

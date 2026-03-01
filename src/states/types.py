@@ -13,6 +13,7 @@ class StateID(Enum):
     TRANSITION   = auto()
     KEYBIND_EDITOR = auto()
     COUNTDOWN = auto()
+    CREDITS = auto()
     # Más estados
 
 # ENUM DE OVERLAYS PARA LOS ESTADOS DEL JUEGO
