@@ -199,7 +199,7 @@ class OptionsState(GameState):
         right = get_hint_key(self.game.controls_config,"right")
         esc = get_hint_key(self.game.controls_config,"back")
         self.volume_hint = UILabel(
-            "volume_hint", cx, 390, f"{left} / {right} para ajustar   |   {esc} para volver",
+            "volume_hint", cx, 430, f"[{left}] / [{right}] para ajustar     |     [{esc}] para volver",
             self.font_small, (0, 0, 0)
         )
 
@@ -230,10 +230,7 @@ class OptionsState(GameState):
         self.game.state.exit_current()
 
     def _on_volume(self):
-        left  = get_hint_key(self.game.controls_config, "left")
-        right = get_hint_key(self.game.controls_config, "right")
-        esc   = get_hint_key(self.game.controls_config, "back")
-        self.volume_hint.set_text(f"{left} / {right} para ajustar   |   {esc} para volver")
+
         self.is_volume = True
 
     def _on_confirm_yes(self):
