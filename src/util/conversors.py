@@ -33,4 +33,12 @@ def pygame_key_to_str(pygame_key: int) -> str:
     
 def get_hint_key(controller: "ControlsConfig", action: str) -> str:
     keys = controller.get("ui", action)  # set[int]
-    return pygame_key_to_str(min(keys)).upper() if keys else "?"
+
+    key = pygame_key_to_str(min(keys)).upper() if keys else "?"
+
+    if key == "RETURN":
+        return "ENTER"
+    elif key == "ESCAPE":
+        return "ESC"
+
+    return key
