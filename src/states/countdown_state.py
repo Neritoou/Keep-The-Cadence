@@ -38,17 +38,14 @@ class CountdownState(GameState):
         self._overlay.fill((0, 0, 0))
 
 
-        self._sounds = tuple(
-            self.game.resources.get_sound(f"countdown_{i}", AudioCategory.SFX)
-            for i in range(0, 4)
-        )
+        self._sounds: list[str] = [f"countdown_{i}" for i in range(0, 4)]
 
         # (?) cambiar por font del resource manager cuando esté disponible
         self.font = pygame.font.SysFont("Consolas", 120, bold=True)
 
     def _play_current_sound(self) -> None:
         sound_index = len(self._steps)  # 3 → 2 → 1 → 0
-        self._sounds[sound_index].play()
+        self.game.audio.play_sfx(self._sounds[sound_index])
 
     def on_enter(self) -> None:
         pass
