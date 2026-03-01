@@ -69,8 +69,8 @@ class Character:
 
     def press_miss(self, direction: NoteDirection) -> None:
         """Notifica al personaje que se falló una nota."""
-        self.receptor.state = CharacterReceptorState.HOLD_MISS
         self.receptor.direction = direction
+        self.receptor.state = CharacterReceptorState.HOLD_MISS
         self.receptor.timer = 0.0
 
     def release_key(self, direction: "NoteDirection") -> None:
