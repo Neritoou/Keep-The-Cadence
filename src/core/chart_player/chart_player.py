@@ -4,6 +4,7 @@ from ..types import ChartData
 from ..note import Note
 from ...audio import AudioCategory
 from ...util.paths import get_inst_path, get_voices_path
+from ...constants import INPUT_OFFSET_MS
 
 if TYPE_CHECKING:
     from ...audio import AudioManager
@@ -197,7 +198,7 @@ class ChartPlayer:
         """
         missed = []
         for note in self._active_notes:
-            if note.is_missed(self.current_time, self.diff_data.judgement_windows):
+            if note.is_missed(self.current_time - INPUT_OFFSET_MS, self.diff_data.judgement_windows):
                 note.on_missed()
                 missed.append(note)
         return missed
@@ -221,7 +222,18 @@ class ChartPlayer:
         if self.chart.song_duration == 0:
             return 100.0
         return (self.current_time / self.chart.song_duration) * 100
+
+    @property
+    def real_time(self) -> float:
+        """Tiempo real en ms en el momento de la llamada, sin esperar a update()."""
+        if not self._playing:
+            return self.current_time
+        return float(pygame.time.get_ticks() - self._start_tick)
     
 
-
-
+    @property
+    def current_notes(self) -> list[Note]:
+        """Notas activas calculadas al tiempo real actual, no al del último frame."""
+        if not self._playing:
+            return self._active_notes
+        return self.chart.get_current_notes(self.real_time, self.spawn_time_ms)
