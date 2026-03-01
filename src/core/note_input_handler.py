@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 from random import choice
 
 from .types import NoteDirection, Judgement
@@ -38,6 +38,7 @@ class NoteInputHandler:
         self.renderer  = renderer
         self.character = character
         self._miss_sounds: list[str] = [f"miss_note_{i}" for i in range(1, 4)]
+        self._on_judgement: Callable[[Judgement], None] | None = None
 
         # Holds que el jugador está sosteniendo activamente (ACTIVE)
         self._held_notes:   "dict[NoteDirection, Note | None]" = {d: None for d in NoteDirection}
@@ -105,6 +106,9 @@ class NoteInputHandler:
 
             self._score.register_tap(Judgement.MISS)
 
+            if self._on_judgement:
+                self._on_judgement(Judgement.MISS)
+
             if note.is_hold_note:
                 # La hold sigue visible hasta su end_time para mostrar cuánto faltaba
                 self._missed_holds[note.direction] = note
@@ -130,6 +134,9 @@ class NoteInputHandler:
         
         self._score.register_tap(judgement)
 
+        if self._on_judgement:
+            self._on_judgement(judgement)
+
         self.renderer.press_hit(direction)
         self.character.press_hit(direction)
         self.player.unmute_voices()
@@ -152,6 +159,10 @@ class NoteInputHandler:
         self.character.press_miss(direction)
         self._play_miss_sound()
         self._score.register_ghost_press()
+
+        if self._on_judgement:
+            self._on_judgement(Judgement.MISS)
+        
         print(f"[GHOST] {direction.name}")
         
     def _handle_hold_drop(self, note: "Note", direction: "NoteDirection") -> None:
@@ -168,6 +179,9 @@ class NoteInputHandler:
         judgement = note.get_judgement(self.player.current_time,self.player.diff_data.judgement_windows)
         note.on_missed()  # ACTIVE -> MISSED
         self._score.register_ghost_press()
+
+        if self._on_judgement:
+            self._on_judgement(judgement)
 
         self._held_notes[direction]   = None
         self._missed_holds[direction] = note  # sigue visible hasta end_time
