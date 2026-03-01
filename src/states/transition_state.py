@@ -39,7 +39,6 @@ class TransitionState(GameState):
             self._switch()
 
     def _switch(self) -> None:
-        self.game.audio.stop_music()
         self.game.state.exit_current() 
         self.game.state.change(self._target, **self._kwargs) 
         self._phase   = "in"
