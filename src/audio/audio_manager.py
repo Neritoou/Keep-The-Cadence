@@ -160,7 +160,7 @@ class AudioManager:
 
         self._sound_categories[category].pop(key)
 
-    def play_sound(self, sound: pygame.mixer.Sound,
+    def play_sound(self, key: str, category: AudioCategory,
                    loops: int = 0, maxtime: int = 0, 
                    fade_ms: int = 0) -> pygame.mixer.Channel | None:
         """
@@ -177,10 +177,16 @@ class AudioManager:
             Canal donde se está reproduciendo o None
         """
         try:
-            return sound.play(loops=loops, maxtime=maxtime, fade_ms=fade_ms)
+            return self._sound_categories[category][key].play(loops=loops, maxtime=maxtime, fade_ms=fade_ms)
         except pygame.error as e:
             print(f"AudioManager: Error reproduciendo sonido: {e}")
             return None
+    
+    def play_sfx(self, key: str) -> None:
+        self.play_sound(key, AudioCategory.SFX)
+
+    def play_voice(self, key: str) -> None:
+        self.play_sound(key, AudioCategory.VOICE)
     
     def stop_sound(self, sound: pygame.mixer.Sound) -> None:
         """Detiene todas las instancias de un sonido."""
