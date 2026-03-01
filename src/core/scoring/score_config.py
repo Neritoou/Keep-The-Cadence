@@ -37,10 +37,9 @@ STARS: list[tuple[float, int]] = [
 
 # Para la barra de rendimiento
 PERFORMANCE_DELTA: dict[Judgement, float] = {
-    Judgement.PERFECT: +5.0,
-    Judgement.GOOD:    +3.0,
-    Judgement.BAD:     +0.0,
-    Judgement.MISS:    -8.0,
+    Judgement.PERFECT: +7.0,   # 5.0 -> 7.0
+    Judgement.GOOD:    +4.0,   # 3.0 -> 4.0
+    Judgement.BAD:     +0.0,   # sin cambio
 }
 
 PERFORMANCE_ZONES: list[tuple[float, int]] = [
