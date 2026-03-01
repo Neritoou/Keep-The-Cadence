@@ -131,7 +131,7 @@ class ChartPlayer:
             self._voice_channel.stop()
             self._voice_channel = None
 
-        self.audio.stop_all_sounds()
+        self.audio.stop_category(AudioCategory.VOICE)
         self._playing = False
 
     def reset(self) -> None:
