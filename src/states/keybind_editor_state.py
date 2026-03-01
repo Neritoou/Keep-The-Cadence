@@ -139,11 +139,12 @@ class KeybindEditorState(GameState):
                     self._editor.clear_slot(ctx, act, slot)
                 
                 case pygame.K_s:
-                    self.game.audio.play_sfx("select")
+                    self.game.audio.play_sfx("start")
                     self._editor.apply()
                     self.game.input.update_controls(self.game.controls_config.data)
                 
                 case pygame.K_ESCAPE:
+                    self.game.audio.play_sfx("select")
                     self._editor.discard()
                     self.game.state.exit_current()
                     

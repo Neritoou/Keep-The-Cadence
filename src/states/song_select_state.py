@@ -84,9 +84,11 @@ class SongSelectState(GameState):
             self._move_diff(1)
 
         elif self.game.input.is_action_pressed("ui", "select"):
-            self._try_start_game()
+            if self._select_timer is None:
+                self._try_start_game()
 
         elif self.game.input.is_action_pressed("ui", "back"):
+            self.game.audio.play_sfx("scroll")
             self.game.state.change_with_transition(StateID.MENU)
 
     def update(self, dt: float) -> None:

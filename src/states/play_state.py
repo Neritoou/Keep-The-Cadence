@@ -114,23 +114,7 @@ class PlayState(GameState):
             self.player.pause()
             self.game.state.change(StateID.PAUSE, play_state=self)
             return
-        
-        # (!) DEBUG — quitar cuando no se necesite
-        elif self.game.input.is_key_pressed(pygame.K_g):
-            self.player.stop()
-            self.game.audio.stop_all_sounds()
-            self.game.audio.stop_music
-            counts = {
-            Judgement.PERFECT: 120,
-            Judgement.GOOD:    30,
-            Judgement.BAD:     10,
-            Judgement.MISS:    5,
-            }
-            for judgement, times in counts.items():
-                for _ in range(times):
-                    self.score_manager.register_tap(judgement)
-            self.game.state.change(StateID.WIN, play_state=self)
-        
+
         # --- Teclas de notas ---
         for action, direction in self.game._PLAY_ACTIONS:
             if self.game.input.is_action_pressed("play", action):

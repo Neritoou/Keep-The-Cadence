@@ -2,7 +2,6 @@ import pygame
 from typing import TYPE_CHECKING
 from .types import OverlayType
 from .game_state import GameState
-from ..resources.types import AudioCategory
 from enfocate import SCREEN_SIZE
 
 if TYPE_CHECKING:
@@ -10,7 +9,7 @@ if TYPE_CHECKING:
     from .play_state import PlayState
 
 
-COUNTDOWN_STEPS = ["3", "2", "1", "¡GO!"]
+COUNTDOWN_STEPS = ["3", "2", "1", "¡A JUGAR!"]
 STEP_DURATION   = 1.0
 GO_DURATION     = 0.6
 INITIAL_DELAY   = 0.5
@@ -41,10 +40,10 @@ class CountdownState(GameState):
         self._sounds: list[str] = [f"countdown_{i}" for i in range(0, 4)]
 
         # (?) cambiar por font del resource manager cuando esté disponible
-        self.font = pygame.font.SysFont("Consolas", 120, bold=True)
+        self.font = self.game.resources.get_font("Estandar",100)
 
     def _play_current_sound(self) -> None:
-        sound_index = len(self._steps)  # 3 → 2 → 1 → 0
+        sound_index = len(self._steps) # 3 -> 2 -> 1 -> GO
         self.game.audio.play_sfx(self._sounds[sound_index])
 
     def on_enter(self) -> None:
