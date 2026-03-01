@@ -1,6 +1,4 @@
 import pygame
-from typing import Tuple
-
 from ...ui import UIElement
 
 class UIStatic(UIElement):
