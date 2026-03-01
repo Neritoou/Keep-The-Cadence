@@ -14,7 +14,7 @@ class UIButton(UIElement):
     def __init__(
             self, name: str, x: int, y: int, callback_function: Callable[[], None],
             base_button: pygame.Surface, selected_button: pygame.Surface,
-            *, text: Optional["UILabel"] = None, visible: bool = True
+            *, text: Optional["UILabel"] = None, visible: bool = True, alpha: int = 255
     ):
         """
         Inicializa las propiedades de un botón.
@@ -31,7 +31,7 @@ class UIButton(UIElement):
 
         width, height = self.button_surface.get_size()
 
-        super().__init__(name, x, y, width, height, visible=visible)
+        super().__init__(name, x, y, width, height, visible=visible, alpha=alpha)
 
         self._surface = base_button
         self._function = callback_function
