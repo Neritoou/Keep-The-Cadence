@@ -55,6 +55,6 @@ DIFFICULTY_DATA: dict[str, DifficultyData] = {
         ),
         pixels_per_ms_mult = 1.3,
         points_multiplier  = 1.3,
-        miss_performance = -8.0,   # -12.0 -> -8.0
+        miss_performance = -7.0,   # -12.0 -> -8.0
     ),
 }
