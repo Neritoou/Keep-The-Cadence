@@ -1,4 +1,3 @@
-# Keep-The-Cadence
 <div align="center">
 
 #  Keep The Cadence
