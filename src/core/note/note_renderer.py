@@ -1,12 +1,11 @@
 from pygame import Surface, Rect
 from typing import TYPE_CHECKING
-from ..resources import Animation
-from .receptor_state import ReceptorFSM, NoteReceptorState
+from ...resources import Animation
+from ..receptor_state import ReceptorFSM, NoteReceptorState
 
 if TYPE_CHECKING:
     from .note import Note
-    from .types import NoteDataType, NoteDirection
-    from .types import ScrollDirection
+    from ..types import NoteDataType, NoteDirection, ScrollDirection
 
 class NoteRenderer:
     """
@@ -59,6 +58,7 @@ class NoteRenderer:
         """Notifica al receptor que se presionó una tecla con hit correcto."""
         fsm = self.receptors[direction]
         fsm.state = NoteReceptorState.HOLD_HIT
+        fsm.timer = 0.0
 
     def press_miss(self, direction: "NoteDirection") -> None:
         """Notifica al receptor que se presionó una tecla con miss."""
@@ -154,7 +154,11 @@ class NoteRenderer:
             self._go_idle(direction)
 
     def _go_idle(self, direction: "NoteDirection") -> None:
-        self.receptors[direction].state = NoteReceptorState.IDLE
+        fsm = self.receptors[direction]
+        fsm.state = NoteReceptorState.IDLE
+        fsm.direction = None
+        fsm.timer = 0.0
+
 
     # --- DIBUJAR NOTAS ---
     def draw_receptors(self, surface):

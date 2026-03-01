@@ -1,17 +1,16 @@
 from typing import TYPE_CHECKING, Callable
 from random import choice
 
-from .types import NoteDirection, Judgement
+from ..types import NoteDirection, Judgement
 from .note import Note
-from .note import NoteState
-from .scoring import ScoreManager
-from ..constants import HOLD_END_WINDOW_MS
+from ..types import NoteState
+from ..scoring import ScoreManager
+from ...constants import HOLD_END_WINDOW_MS, INPUT_OFFSET_MS
 
 if TYPE_CHECKING:
     from .note_renderer import NoteRenderer
-    from .character import Character
-    from .chart_player import ChartPlayer
-
+    from ..character import Character
+    from ..chart_player import ChartPlayer
 
 class NoteInputHandler:
     """
@@ -81,7 +80,7 @@ class NoteInputHandler:
             self.character.release_key(direction)
             return
         
-        time_remaining = note.end_time - self.player.current_time
+        time_remaining = note.end_time - self.player.real_time
 
         if time_remaining > HOLD_END_WINDOW_MS:
             self._handle_hold_drop(note, direction)
@@ -129,7 +128,7 @@ class NoteInputHandler:
         al renderer, personaje y audio. Si es hold, la registra en
         _held_notes para tracking posterior.
         """
-        judgement = note.get_judgement(self.player.current_time,self.player.diff_data.judgement_windows)
+        judgement = note.get_judgement(self.player.real_time + INPUT_OFFSET_MS,self.player.diff_data.judgement_windows)
         note.on_hit()  # PENDING -> ACTIVE (hold) | PENDING -> COMPLETED (tap)
         
         self._score.register_tap(judgement)
@@ -176,7 +175,7 @@ class NoteInputHandler:
             note: Hold activa que se está dropeando.
             direction: Dirección de la hold.
         """
-        judgement = note.get_judgement(self.player.current_time,self.player.diff_data.judgement_windows)
+        judgement = note.get_judgement(self.player.real_time + INPUT_OFFSET_MS,self.player.diff_data.judgement_windows)
         note.on_missed()  # ACTIVE -> MISSED
         self._score.register_ghost_press()
 
@@ -220,11 +219,11 @@ class NoteInputHandler:
         Solo considera notas en estado PENDING — las ACTIVE, COMPLETED y
         MISSED no son golpeables.        
         """
-        current_time = self.player.current_time
+        current_time = self.player.real_time + INPUT_OFFSET_MS
         best: "Note | None" = None
         best_delta = float("inf")
 
-        for note in self.player._active_notes:
+        for note in self.player.current_notes:
             if note.direction != direction:
                 continue
             if note.state != NoteState.PENDING:  # solo PENDING es golpeable
@@ -244,7 +243,7 @@ class NoteInputHandler:
         Holds activas (bien presionadas): se completan y disparan on_hold_complete.
         Holds falladas (miss o drop): solo se limpian visualmente.
         """        
-        current_time = self.player.current_time
+        current_time = self.player.real_time
 
         for direction in NoteDirection:
             # Hold activa: el jugador la sostuvo hasta el final

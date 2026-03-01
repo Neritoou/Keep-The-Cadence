@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
 from ...core.types import NoteDirection
 from ...constants import NOTE_SIZE_MULTIPLIER
-from pygame import transform
 
 if TYPE_CHECKING:
     from ..note_library import NoteSurfaces

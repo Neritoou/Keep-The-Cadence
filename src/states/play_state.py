@@ -1,12 +1,10 @@
 import pygame
 from typing import TYPE_CHECKING
-from enfocate import SCREEN_SIZE
 from .game_state import GameState
 from .types import OverlayType, StateID
-from ..resources.types import AudioCategory
 
 from ..core.chart_player import ChartLoader, ChartPlayer
-from ..core.note_input_handler import NoteInputHandler
+from ..core.note import NoteInputHandler
 from ..core.scoring import ScoreManager
 from ..core.types import Judgement, NoteDirection
 from ..core.difficulty_data import DIFFICULTY_DATA
@@ -17,8 +15,6 @@ from ..ui import PerformanceBar, UILabel, UIManager, UIJudgementLabel
 if TYPE_CHECKING:
     from ..core.game import Game
     from ..core.database import DifficultyName
-
-
 
 class PlayState(GameState):
     """Estado principal del juego donde se reproduce el chart."""
@@ -114,23 +110,7 @@ class PlayState(GameState):
             self.player.pause()
             self.game.state.change(StateID.PAUSE, play_state=self)
             return
-        
-        # (!) DEBUG — quitar cuando no se necesite
-        elif self.game.input.is_key_pressed(pygame.K_g):
-            self.player.stop()
-            self.game.audio.stop_all_sounds()
-            self.game.audio.stop_music
-            counts = {
-            Judgement.PERFECT: 120,
-            Judgement.GOOD:    30,
-            Judgement.BAD:     10,
-            Judgement.MISS:    5,
-            }
-            for judgement, times in counts.items():
-                for _ in range(times):
-                    self.score_manager.register_tap(judgement)
-            self.game.state.change(StateID.WIN, play_state=self)
-        
+
         # --- Teclas de notas ---
         for action, direction in self.game._PLAY_ACTIONS:
             if self.game.input.is_action_pressed("play", action):

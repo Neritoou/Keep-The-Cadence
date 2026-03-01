@@ -4,10 +4,9 @@ from enfocate import SCREEN_SIZE
 
 from .game_state import GameState
 from .types import OverlayType
-from ..config.keybind_editor import KeybindEditor
+from ..config import KeybindEditor
 from ..util.conversors import pygame_key_to_str
-from ..ui import UIManager, UILabel
-from ..ui.components.button import UIButton
+from ..ui import UIManager, UILabel, UIButton
 
 if TYPE_CHECKING:
     from ..core.game import Game
@@ -139,11 +138,12 @@ class KeybindEditorState(GameState):
                     self._editor.clear_slot(ctx, act, slot)
                 
                 case pygame.K_s:
-                    self.game.audio.play_sfx("select")
+                    self.game.audio.play_sfx("start")
                     self._editor.apply()
                     self.game.input.update_controls(self.game.controls_config.data)
                 
                 case pygame.K_ESCAPE:
+                    self.game.audio.play_sfx("select")
                     self._editor.discard()
                     self.game.state.exit_current()
                     

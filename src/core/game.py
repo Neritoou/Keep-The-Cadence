@@ -6,9 +6,9 @@ from ..controller import InputManager
 from ..audio import AudioManager
 from ..states import *
 from ..config import *
-from ..core.character_factory import CharacterFactory
+from ..core.character import CharacterFactory
 from ..core.types import NoteDirection, ScrollDirection
-from ..core.note_renderer import NoteRenderer
+from ..core.note import NoteRenderer
 from ..constants import HIT_LINE_XS, HIT_LINE_Y_UP, SPAWN_TIME_MS, MISS_DISPLAY, MIKU_PLAY_POSITION
 from ..core.database import Database
 from ..util import get_path

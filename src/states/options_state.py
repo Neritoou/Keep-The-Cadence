@@ -4,6 +4,7 @@ from enfocate import SCREEN_SIZE
 
 from .types import StateID, OverlayType
 from .game_state import GameState
+from ..util.conversors import get_hint_key
 
 from ..ui import UIManager, UISlideMenu, UILabel, UIButtonMenu
 
@@ -13,7 +14,6 @@ if TYPE_CHECKING:
 class OptionsState(GameState):
     def __init__(self, game: "Game") -> None:
         super().__init__(game)
-
         self.font_title = self.game.resources.get_font("Alternative", 100)
         self.font_menu = self.game.resources.get_font("Estandar", 48)
         self.font_small = self.game.resources.get_font("Estandar", 30)
@@ -21,15 +21,16 @@ class OptionsState(GameState):
         self.bg = self.game.resources.get_image("Background2")
 
         spritesheet = self.game.resources.get_spritesheet("MenuOptions")
-        self._option_images: list[pygame.Surface] = [
-            (
-                spritesheet.get_frame_at(0, col, trim=True)
-            )
-            for col in range(3)
-        ]
+        self._option_images: list[pygame.Surface] = spritesheet.get_frames_at_row(0,trim=True)
 
+        self._dark_overlay = pygame.Surface(SCREEN_SIZE, pygame.SRCALPHA)
+        self._dark_overlay.fill((0, 0, 0, 200))
+
+        self._panel_rect = pygame.Rect(0, 0, 600, 320)
+        self._panel_rect.center = (SCREEN_SIZE[0] // 2, SCREEN_SIZE[1] // 2)
         self._build_ui()
         self._build_confirm_panel()
+        self._build_volume_panel()
         
     def on_enter(self) -> None:
         pass
@@ -40,10 +41,10 @@ class OptionsState(GameState):
     def update(self, dt: float) -> None:
         self.ui.update(dt)
         self.confirm_ui.update(dt)
+        self.volume_ui.update(dt)
 
     def render(self, surface: pygame.Surface) -> None:
         surface.blit(self.bg, (0, 0))
-
         current_index = self.menu._selected_index
         current_image = self._option_images[current_index]
 
@@ -55,21 +56,35 @@ class OptionsState(GameState):
 
         if self.is_confirming:
             # Oscurecer aún más el fondo
-            dark_overlay = pygame.Surface(SCREEN_SIZE, pygame.SRCALPHA)
-            dark_overlay.fill((0, 0, 0, 200))
-            surface.blit(dark_overlay, (0, 0))
+            surface.blit(self._dark_overlay, (0, 0))
 
             # Dibujar el panel de la ventana flotante
-            panel_rect = pygame.Rect(0, 0, 600, 320)
-            panel_rect.center = (SCREEN_SIZE[0] // 2, SCREEN_SIZE[1] // 2)
-            pygame.draw.rect(surface, (213, 176, 191), panel_rect, border_radius=45)
-            pygame.draw.rect(surface, (255, 255, 255), panel_rect, width=5, border_radius=45)
+            pygame.draw.rect(surface, (213, 176, 191), self._panel_rect, border_radius=45)
+            pygame.draw.rect(surface, (255, 255, 255), self._panel_rect, width=5, border_radius=45)
 
             # Renderizar los textos y botones de confirmación
             self.confirm_ui.render(surface)
 
+        if self.is_volume:
+            surface.blit(self._dark_overlay, (0, 0))
+            pygame.draw.rect(surface, (213, 176, 191), self._panel_rect, border_radius=45)
+            pygame.draw.rect(surface, (255, 255, 255), self._panel_rect, width=5, border_radius=45)
+            self.volume_value.set_text(self._volume_text())
+            self.volume_ui.render(surface)
+
+
     def handle_input(self, events: list[pygame.event.Event]) -> None:
-        if self.is_confirming:
+        if self.is_volume:
+            if self.game.input.is_action_pressed("ui", "left"):
+                self.game.audio.play_sfx("scroll")
+                self._change_volume(-0.1)
+            elif self.game.input.is_action_pressed("ui","right"):
+                self.game.audio.play_sfx("scroll")
+                self._change_volume(0.1)
+            elif self.game.input.is_action_pressed("ui", "back"):
+                self.game.audio.play_sfx("select")
+                self.is_volume = False
+        elif self.is_confirming:
             if self.game.input.is_action_pressed("ui", "left"):
                 self.game.audio.play_sfx("scroll")
                 self.confirm_menu.move_up()
@@ -92,6 +107,7 @@ class OptionsState(GameState):
                 self.game.audio.play_sfx("select")
                 self.menu.execute_selected()
             elif self.game.input.is_action_pressed("ui", "back"): # ESC para volver
+                self.game.audio.play_sfx("select")
                 self._on_back()
 
     @property
@@ -104,6 +120,7 @@ class OptionsState(GameState):
     
     def _build_ui(self) -> None:
         options_list = [
+            ("VOLUMEN", self._on_volume),
             ("CONTROLES", self._on_controls),
             ("BORRAR DATOS", self._show_confirmation),
             ("VOLVER", self._on_back)
@@ -165,7 +182,39 @@ class OptionsState(GameState):
         self.confirm_ui.add_element(self.confirm_sub)
         self.confirm_ui.add_element(self.confirm_menu)
 
+    def _build_volume_panel(self) -> None:
+        self.is_volume = False
+        cx = SCREEN_SIZE[0] // 2
 
+        self.volume_title = UILabel(
+            "volume_title", cx, 260, "Volumen",
+            self.font_menu, (60, 40, 40)
+        )
+        self.volume_value = UILabel(
+            "volume_value", cx, 330, self._volume_text(),
+            self.font_menu, (60, 40, 40)
+        )
+
+        left = get_hint_key(self.game.controls_config,"left")
+        right = get_hint_key(self.game.controls_config,"right")
+        esc = get_hint_key(self.game.controls_config,"back")
+        self.volume_hint = UILabel(
+            "volume_hint", cx, 390, f"{left} / {right} para ajustar   |   {esc} para volver",
+            self.font_small, (0, 0, 0)
+        )
+
+        self.volume_ui = UIManager()
+        self.volume_ui.add_element(self.volume_title)
+        self.volume_ui.add_element(self.volume_value)
+        self.volume_ui.add_element(self.volume_hint)
+
+    def _volume_text(self) -> str:
+        vol = round(self.game.audio.get_master_volume() * 10)
+        return f"{vol} / 10"
+
+    def _change_volume(self, delta: float) -> None:
+        current = self.game.audio.get_master_volume()
+        self.game.audio.set_master_volume(max(0.0, min(1.0, current + delta)))
 
     # --- Callbacks ---
     def _on_controls(self):
@@ -180,11 +229,15 @@ class OptionsState(GameState):
     def _on_back(self):
         self.game.state.exit_current()
 
-
+    def _on_volume(self):
+        left  = get_hint_key(self.game.controls_config, "left")
+        right = get_hint_key(self.game.controls_config, "right")
+        esc   = get_hint_key(self.game.controls_config, "back")
+        self.volume_hint.set_text(f"{left} / {right} para ajustar   |   {esc} para volver")
+        self.is_volume = True
 
     def _on_confirm_yes(self):
         self.game.database.reset_all_records()
-        print("¡Datos borrados con éxito!")
         self.is_confirming = False
 
     def _on_confirm_no(self):

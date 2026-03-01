@@ -1,5 +1,5 @@
 import pygame
-from typing import Callable, Optional, TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING
 
 from ...ui import UIElement
 from .button import UIButton

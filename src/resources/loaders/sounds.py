@@ -17,5 +17,8 @@ def _load_sounds(rm: "ResourceManager"):
         # MENU SOUNDS
         rm.load_sound("scroll", AudioCategory.SFX, str(get_asset("sounds", "menu", "scroll_menu.ogg")))
         rm.load_sound("select", AudioCategory.SFX, str(get_asset("sounds", "menu", "confirm_menu.ogg")))
+        rm.load_sound("start", AudioCategory.SFX, str(get_asset("sounds", "menu", "start_song.ogg")))
+        rm.load_sound("loss", AudioCategory.SFX, str(get_asset("sounds", "states", "loss.ogg")))
+
 
 

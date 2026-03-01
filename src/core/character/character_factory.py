@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING
 from .character import Character
-from .types import NoteDirection
-from ..constants import MIKU_SIZE_MULTIPLIER
+from ..types import NoteDirection
+from ...constants import MIKU_SIZE_MULTIPLIER
 
 if TYPE_CHECKING:
-    from ..resources import ResourceManager
+    from ...resources import ResourceManager
     from pygame import Surface
 
 class CharacterFactory:

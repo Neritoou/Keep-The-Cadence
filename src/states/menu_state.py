@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 from .types import StateID, OverlayType
 from .game_state import GameState
 
-from ..resources import AudioCategory
 from ..ui import UIManager, UISlideMenu
 
 if TYPE_CHECKING:
@@ -99,7 +98,7 @@ class MenuState(GameState):
         self.game.state.change_with_transition(StateID.OPTIONS)
 
     def _on_credits(self):
-        print("ESCENA DE CREDITOS")
-    
+        self.game.state.change_with_transition(StateID.CREDITS)    
+
     def _on_exit(self):
         self.game._stop_context()

@@ -30,7 +30,7 @@ class CreditsState(GameState):
     def handle_input(self, events: list[pygame.event.Event]) -> None:
         if self.game.input.is_action_pressed("ui", "back") or self.game.input.is_action_pressed("ui", "select"):
             self.game.audio.play_sfx("select")
-            self.game.state.change(StateID.MENU)
+            self.game.state.exit_current()
 
     def update(self, dt: float) -> None:
         pass
@@ -77,7 +77,7 @@ class CreditsState(GameState):
 
     @property
     def overlay_type(self) -> OverlayType:
-        return OverlayType.NONE
+        return OverlayType.FULLSCREEN
 
     @property
     def is_transient(self) -> bool:
