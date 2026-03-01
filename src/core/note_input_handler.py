@@ -11,7 +11,6 @@ if TYPE_CHECKING:
     from .note_renderer import NoteRenderer
     from .character import Character
     from .chart_player import ChartPlayer
-    from pygame.mixer import Sound
 
 
 class NoteInputHandler:
@@ -25,7 +24,7 @@ class NoteInputHandler:
     """
     def __init__(
             self, player: "ChartPlayer", renderer: "NoteRenderer", 
-            character: "Character", miss_sounds: "tuple[Sound, ...]",
+            character: "Character",
             score_manager: ScoreManager
             ):
         """
@@ -38,7 +37,7 @@ class NoteInputHandler:
         self.player    = player
         self.renderer  = renderer
         self.character = character
-        self._miss_sounds = miss_sounds
+        self._miss_sounds: list[str] = [f"miss_note_{i}" for i in range(1, 4)]
 
         # Holds que el jugador está sosteniendo activamente (ACTIVE)
         self._held_notes:   "dict[NoteDirection, Note | None]" = {d: None for d in NoteDirection}
@@ -255,7 +254,7 @@ class NoteInputHandler:
     def _play_miss_sound(self) -> None:
         """Reproduce un sonido de fallo aleatorio de entre los disponibles."""
         sound = choice(self._miss_sounds)
-        self.player.audio.play_sound(sound)
+        self.player.audio.play_sfx(sound)
 
     def reset(self) -> None:
         """Limpia las holds activas y fallidas."""

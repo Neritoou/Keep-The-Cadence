@@ -14,4 +14,8 @@ def _load_sounds(rm: "ResourceManager"):
         for i in range(0, 4):
             rm.load_sound(f"countdown_{i}", AudioCategory.SFX, str(get_asset("sounds", "countdown", f"countdown_{i}.ogg")))
 
+        # MENU SOUNDS
+        rm.load_sound("scroll", AudioCategory.SFX, str(get_asset("sounds", "menu", "scroll_menu.ogg")))
+        rm.load_sound("select", AudioCategory.SFX, str(get_asset("sounds", "menu", "confirm_menu.ogg")))
+
 

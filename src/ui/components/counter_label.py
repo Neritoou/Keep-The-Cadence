@@ -40,8 +40,9 @@ class UICounterLabel(UILabel):
         font: pygame.font.Font,
         color: tuple = (200, 200, 200),
         fmt: Callable[[float], str] = lambda v: str(int(v)),
+        center: bool = False
     ):
-        super().__init__(element_id, x, y, fmt(0), font, color, visible=False)
+        super().__init__(element_id, x, y, fmt(0), font, color, center=center, visible=False)
         self._fmt         = fmt
         self._state       = _State.IDLE
         self._target      = 0.0

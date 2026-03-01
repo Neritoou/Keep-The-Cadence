@@ -34,14 +34,10 @@ class PlayState(GameState):
 
         self.player = ChartPlayer(self.chart, game.audio, song_folder, SPAWN_TIME_MS, diff_data = self.diff_data)
 
-        sounds = tuple(self.game.resources.get_sound(f"miss_note_{i}", AudioCategory.SFX)
-            for i in range(1, 4)
-            )
-
         self.score_manager = ScoreManager(self.chart.total_notes, self.diff_data)
 
         self.note_input = NoteInputHandler(
-            self.player, self.game.note_renderer, self.game.character, sounds,
+            self.player, self.game.note_renderer, self.game.character,
             self.score_manager
             )
 
@@ -98,8 +94,8 @@ class PlayState(GameState):
         self.note_input.update(dt)
 
         self.performance_bar.set_performance(self.score_manager.performance_ratio)
-        self.score_label.set_text(f"SCORE: {self.score_manager.score}")
-        self.misses_label.set_text(f"|   MISSES: {self.score_manager.judgement_counts[Judgement.MISS]}")
+        self.score_label.set_text(f"Puntuacion: {self.score_manager.score}")
+        self.misses_label.set_text(f"|   Fallos: {self.score_manager.judgement_counts[Judgement.MISS]}")
 
         self.ui.update(dt)
 
@@ -163,8 +159,8 @@ class PlayState(GameState):
 
         font = self.game.resources.get_font("Estandar", 30)
 
-        self.score_label = UILabel("score_label", 905, 650, "SCORE: 0", font, "#FFFFFF")
-        self.misses_label = UILabel("misses_label", 1100, 650, "|   MISSES: 0", font, "#FFFFFF")
+        self.score_label = UILabel("score_label", 880, 650, "Puntuacion: 0", font, "#FFFFFF")
+        self.misses_label = UILabel("misses_label", 1100, 650, "|   Fallos: 0", font, "#FFFFFF")
 
         self.panel = self.game.resources.get_image("stage_panel")
         self.panel_rect = self.panel.get_rect(center = (540,710))

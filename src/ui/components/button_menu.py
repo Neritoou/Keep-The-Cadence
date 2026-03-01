@@ -19,7 +19,8 @@ class UIButtonMenu(UIElement):
             options: list[tuple[str, Callable[[], None]]],
             base_surface: pygame.Surface, selected_surface: pygame.Surface,
             font: pygame.font.Font, text_color: "ColorValue" = (255, 255, 255),
-            spacing: int = 20, center_x: bool = False, visible: bool = True
+            spacing: int = 20, center_x: bool = False, horizontal: bool = False,
+            visible: bool = True, alpha: int = 255
     ):
         """
         Args:
@@ -30,35 +31,61 @@ class UIButtonMenu(UIElement):
             text_color: Color del texto
             spacing: Espacio vertical en píxeles entre cada opción.
             center_x: Centrado horizontal del botón.
+            horizontal: Si se desea hacer el menu horizontal
         """
         # Calcular dimensiones
         btn_w, btn_h = base_surface.get_size()
-        total_height = (btn_h + spacing) * len(options) - spacing
-        
-        # Ajustar la X si se pide centrar respecto a la coordenada dada
-        menu_x = (x - btn_w // 2) if center_x else x
+        self._options_count = len(options)
 
-        super().__init__(name, int(menu_x), y, btn_w, total_height, visible=visible)
+        if horizontal:
+            total_width = (btn_w  + spacing) * self._options_count - spacing
+            total_height = btn_h
+
+            start_x = (x - total_width // 2) if center_x else x
+        else:
+            total_width = btn_w
+            total_height = (btn_h + spacing) * self._options_count - spacing
+
+            start_x = (x - btn_w // 2) if center_x else x
 
         self._buttons: list[UIButton] = []
         self._selected_index: int = 0
+        self._horizontal = horizontal
 
         # Crear cada botón
         for i, (text, callback) in enumerate(options):
-            btn_y = y + i * (btn_h + spacing)
+            if self._horizontal:
+                btn_x = start_x + i * (btn_w + spacing)
+                btn_y = y
+            else:
+                btn_x = start_x
+                btn_y = y + i * (btn_h + spacing)
             
             # Label centrado para el botón
-            btn_label = UILabel(f"{name}_lbl_{i}", 0, 0, text, font, text_color, center=True)
+            btn_label = UILabel(f"{name}_lbl_{i}", 0, 0, text, font, text_color, center=True, alpha=alpha)
             
-            # Instanciamos el UIButton asignando 'selected_surface' como el 'hover_button'
             btn = UIButton(
-                f"{name}_btn_{i}", int(menu_x), btn_y, callback,
+                f"{name}_btn_{i}", int(btn_x), int(btn_y), callback,
                 base_surface.copy(), selected_surface.copy(),
-                text=btn_label
+                text=btn_label, visible=visible, alpha=alpha
             )
             self._buttons.append(btn)
         
+        super().__init__(name, int(start_x), y, btn_w, total_height, visible=visible, alpha=alpha)
+
         self._update_selection()
+
+    @property
+    def selected_index(self) -> int:
+        """Índice actual de la opción seleccionada."""
+        return self._selected_index
+    
+    @selected_index.setter
+    def selected_index(self, value: int) -> None:
+        """Permite establecer la selección directamente."""
+        if self._options_count > value and value >= 0:
+            self._selected_index = value
+            self._update_selection()
 
     def move_up(self) -> None:
         """Mueve la selección hacia arriba."""

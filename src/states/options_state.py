@@ -1,9 +1,11 @@
 import pygame
 from typing import TYPE_CHECKING
+from enfocate import SCREEN_SIZE
 
 from .types import StateID, OverlayType
 from .game_state import GameState
-from ..ui import UIManager, UISlideMenu, UILabel
+
+from ..ui import UIManager, UISlideMenu, UILabel, UIButtonMenu
 
 if TYPE_CHECKING:
     from src.core.game import Game
@@ -14,10 +16,20 @@ class OptionsState(GameState):
 
         self.font_title = self.game.resources.get_font("Alternative", 100)
         self.font_menu = self.game.resources.get_font("Estandar", 48)
+        self.font_small = self.game.resources.get_font("Estandar", 30)
 
         self.bg = self.game.resources.get_image("Background2")
 
+        spritesheet = self.game.resources.get_spritesheet("MenuOptions")
+        self._option_images: list[pygame.Surface] = [
+            (
+                spritesheet.get_frame_at(0, col, trim=True)
+            )
+            for col in range(3)
+        ]
+
         self._build_ui()
+        self._build_confirm_panel()
         
     def on_enter(self) -> None:
         pass
@@ -27,25 +39,64 @@ class OptionsState(GameState):
 
     def update(self, dt: float) -> None:
         self.ui.update(dt)
+        self.confirm_ui.update(dt)
 
     def render(self, surface: pygame.Surface) -> None:
         surface.blit(self.bg, (0, 0))
 
+        current_index = self.menu._selected_index
+        current_image = self._option_images[current_index]
+
+        img_rect = current_image.get_rect(bottomright=(SCREEN_SIZE[0] - 20, SCREEN_SIZE[1] - 20))
+
+        surface.blit(current_image, img_rect)
+
         self.ui.render(surface)
 
+        if self.is_confirming:
+            # Oscurecer aún más el fondo
+            dark_overlay = pygame.Surface(SCREEN_SIZE, pygame.SRCALPHA)
+            dark_overlay.fill((0, 0, 0, 200))
+            surface.blit(dark_overlay, (0, 0))
+
+            # Dibujar el panel de la ventana flotante
+            panel_rect = pygame.Rect(0, 0, 600, 320)
+            panel_rect.center = (SCREEN_SIZE[0] // 2, SCREEN_SIZE[1] // 2)
+            pygame.draw.rect(surface, (213, 176, 191), panel_rect, border_radius=45)
+            pygame.draw.rect(surface, (255, 255, 255), panel_rect, width=5, border_radius=45)
+
+            # Renderizar los textos y botones de confirmación
+            self.confirm_ui.render(surface)
+
     def handle_input(self, events: list[pygame.event.Event]) -> None:
-        if self.game.input.is_action_pressed("ui", "up"):
-            self.menu.move_up()
-        elif self.game.input.is_action_pressed("ui", "down"):
-            self.menu.move_down()
-        elif self.game.input.is_action_pressed("ui", "select"):
-            self.menu.execute_selected()
-        elif self.game.input.is_action_pressed("ui", "pause"): # ESC para volver
-            self._on_back()
-            
+        if self.is_confirming:
+            if self.game.input.is_action_pressed("ui", "left"):
+                self.game.audio.play_sfx("scroll")
+                self.confirm_menu.move_up()
+            elif self.game.input.is_action_pressed("ui", "right"):
+                self.game.audio.play_sfx("scroll")
+                self.confirm_menu.move_down()
+            elif self.game.input.is_action_pressed("ui", "select"):
+                self.game.audio.play_sfx("select")
+                self.confirm_menu.execute_selected()
+            elif self.game.input.is_action_pressed("ui", "back"):
+                self._on_confirm_no()
+        else:
+            if self.game.input.is_action_pressed("ui", "up"):
+                self.game.audio.play_sfx("scroll")
+                self.menu.move_up()
+            elif self.game.input.is_action_pressed("ui", "down"):
+                self.game.audio.play_sfx("scroll")
+                self.menu.move_down()
+            elif self.game.input.is_action_pressed("ui", "select"):
+                self.game.audio.play_sfx("select")
+                self.menu.execute_selected()
+            elif self.game.input.is_action_pressed("ui", "back"): # ESC para volver
+                self._on_back()
+
     @property
     def overlay_type(self) -> OverlayType:
-        return OverlayType.NONE
+        return OverlayType.FULLSCREEN
 
     @property
     def is_transient(self) -> bool:
@@ -54,8 +105,7 @@ class OptionsState(GameState):
     def _build_ui(self) -> None:
         options_list = [
             ("CONTROLES", self._on_controls),
-            ("EDITOR DE CHART", self._on_chart_editor),
-            ("BORRAR DATOS", self._on_reset_data),
+            ("BORRAR DATOS", self._show_confirmation),
             ("VOLVER", self._on_back)
         ]
 
@@ -64,11 +114,11 @@ class OptionsState(GameState):
                              "Opciones", self.font_title, (60, 40, 40), center=False)
 
         btn_surface = pygame.Surface((700, 80), pygame.SRCALPHA)
-        pygame.draw.rect(btn_surface, (213, 176, 191), btn_surface.get_rect(), border_radius=45)
+        pygame.draw.rect(btn_surface, (213, 176, 191), btn_surface.get_rect(), border_radius=50)
 
         sel_surface = pygame.Surface((700, 80), pygame.SRCALPHA)
-        pygame.draw.rect(sel_surface, (213, 176, 191), sel_surface.get_rect(), border_radius=45)
-        pygame.draw.rect(sel_surface, (60, 40, 40), sel_surface.get_rect(), width=5, border_radius=45)
+        pygame.draw.rect(sel_surface, (213, 176, 191), sel_surface.get_rect(), border_radius=50)
+        pygame.draw.rect(sel_surface, (60, 40, 40), sel_surface.get_rect(), width=5, border_radius=50)
 
         self.menu = UISlideMenu(
             "options_menu", 640, 220, options_list, btn_surface, self.font_menu,
@@ -80,6 +130,41 @@ class OptionsState(GameState):
         self.ui.add_element(self.title)
         self.ui.add_element(self.menu)
 
+    def _build_confirm_panel(self) -> None:
+        self.is_confirming = False
+        
+        self.confirm_label = UILabel(
+            "confirm_label", SCREEN_SIZE[0] // 2, 260, "¿Borrar TODOS los records?",
+            self.font_menu, (204, 35, 35)
+            )
+        self.confirm_sub = UILabel(
+            "confirm_sub", SCREEN_SIZE[0] // 2, 320, "Esta accion no se puede deshacer.",
+            self.font_small, (0, 0, 0)
+            )
+
+        confirm_options = [
+            ("NO, CANCELAR", self._on_confirm_no),
+            ("SI, BORRAR TODO", self._on_confirm_yes)
+        ]
+
+        c_btn_surf = pygame.Surface((240, 60), pygame.SRCALPHA)
+        pygame.draw.rect(c_btn_surf, (60, 20, 20, 230), c_btn_surf.get_rect(), border_radius=15)
+
+        c_sel_surf = pygame.Surface((240, 60), pygame.SRCALPHA)
+        pygame.draw.rect(c_sel_surf, (200, 50, 50, 255), c_sel_surf.get_rect(), border_radius=15)
+        pygame.draw.rect(c_sel_surf, (255, 255, 255), c_sel_surf.get_rect(), width=5, border_radius=15)
+
+        self.confirm_menu = UIButtonMenu(
+            "confirm_menu", SCREEN_SIZE[0] // 2, 410,
+            confirm_options, c_btn_surf, c_sel_surf, self.font_small, 
+            center_x=True, horizontal=True, spacing=20
+        )
+
+        self.confirm_ui = UIManager()
+        self.confirm_ui.add_element(self.confirm_label)
+        self.confirm_ui.add_element(self.confirm_sub)
+        self.confirm_ui.add_element(self.confirm_menu)
+
 
 
     # --- Callbacks ---
@@ -89,9 +174,18 @@ class OptionsState(GameState):
     def _on_chart_editor(self):
         self.game.state.change_with_transition(StateID.CHART_SETUP)
 
-    def _on_reset_data(self):
-        self.game.database.reset_all_records()
-        print("¡Datos borrados con éxito!")
+    def _show_confirmation(self):
+        self.is_confirming = True
     
     def _on_back(self):
-        self.game.state.change(StateID.MENU)
+        self.game.state.exit_current()
+
+
+
+    def _on_confirm_yes(self):
+        self.game.database.reset_all_records()
+        print("¡Datos borrados con éxito!")
+        self.is_confirming = False
+
+    def _on_confirm_no(self):
+        self.is_confirming = False
