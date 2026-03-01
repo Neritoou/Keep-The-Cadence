@@ -9,6 +9,7 @@ from .slide_menu import UISlideMenu
 from .panel import UIPanel
 from .song_detail_panel import UISongDetailPanel
 from .button_menu import UIButtonMenu
+from .judgement_label import UIJudgementLabel
 
 __all__ = ["UIStatic", "UIButton", "UILabel", "UICounterLabel", "UIMenu", "PerformanceBar",
            "UISlideButton", "UISlideMenu"]

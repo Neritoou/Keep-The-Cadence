@@ -12,7 +12,7 @@ from ..core.types import Judgement, NoteDirection
 from ..core.difficulty_data import DIFFICULTY_DATA
 
 from ..constants import SPAWN_TIME_MS, MIKU_PLAY_POSITION
-from ..ui import PerformanceBar, UILabel, UIManager
+from ..ui import PerformanceBar, UILabel, UIManager, UIJudgementLabel
 
 if TYPE_CHECKING:
     from ..core.game import Game
@@ -41,6 +41,7 @@ class PlayState(GameState):
             self.score_manager
             )
 
+        self._build_fonts()
         self._build_ui()
 
     def start_game(self) -> None:
@@ -66,6 +67,7 @@ class PlayState(GameState):
         self.game.bg_normies.play("bg", reset=True, loop=True)
         self.game.character.animator.play("idle", reset=True, loop=True)
         self.game.note_renderer.reset_receptors()
+        self.judgement_label.visible = False
         self.game.state.change(StateID.COUNTDOWN, play_state=self)
 
     def on_enter(self) -> None:
@@ -149,26 +151,35 @@ class PlayState(GameState):
 
         self.game.note_renderer.draw_receptors(surface)
 
-
         self.game.character.draw(surface)
         self.ui.render(surface)
+    
+    def _build_fonts(self) -> None:
+        self.fonts = {
+            "small": self.game.resources.get_font("Estandar", 30),
+            "normal": self.game.resources.get_font("Estandar", 48)
+        }
 
     def _build_ui(self) -> None:
         performance_icon = self.game.resources.get_spritesheet("PerformanceIcon")
         self.performance_bar = PerformanceBar("performance_bar", 590, 600, 600, performance_icon, icon_lerp_speed=5.0)
 
-        font = self.game.resources.get_font("Estandar", 30)
+        self.judgement_label = UIJudgementLabel("judgement_label", 560, 130, self.fonts["normal"])
 
-        self.score_label = UILabel("score_label", 880, 650, "Puntuacion: 0", font, "#FFFFFF")
-        self.misses_label = UILabel("misses_label", 1100, 650, "|   Fallos: 0", font, "#FFFFFF")
-
+        self.score_label = UILabel("score_label", 880, 650, "Puntuacion: 0", self.fonts["small"], "#FFFFFF")
+        self.misses_label = UILabel("misses_label", 1100, 650, "|   Fallos: 0", self.fonts["small"], "#FFFFFF")
+        
         self.panel = self.game.resources.get_image("stage_panel")
         self.panel_rect = self.panel.get_rect(center = (540,710))
+
 
         self.ui: UIManager = UIManager()
         self.ui.add_element(self.performance_bar)
         self.ui.add_element(self.score_label)
         self.ui.add_element(self.misses_label)
+        self.ui.add_element(self.judgement_label)
+
+        self.note_input._on_judgement = self.judgement_label.show_judgement
 
     @property
     def overlay_type(self) -> OverlayType:
