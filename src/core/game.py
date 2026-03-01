@@ -1,5 +1,6 @@
 import pygame
 from enfocate import GameBase, GameMetadata, COLORS
+
 from ..resources import ResourceManager
 from ..controller import InputManager
 from ..audio import AudioManager
@@ -14,9 +15,16 @@ from ..util import get_path
 from ..resources import Animation
 
 class Game(GameBase):
-    def __init__(self, metadata: GameMetadata) -> None:
-        # 1. Inyección de metadatos al Core
-        super().__init__(metadata)
+    def __init__(self) -> None:
+        
+        meta = GameMetadata(
+                title="Keep The Cadence",
+                description="Juego de Ritmo inspirado en Friday Night Funkin.",
+                authors=["Odett Sayegh", "Agostinho Dos Santos", "Angel Ramirez"],
+                group_number=4
+            )
+        
+        super().__init__(meta)
 
         # 2. Inicialización de estado interno
         self.controls_config = ControlsConfig(path="config/controls.json")
@@ -26,6 +34,7 @@ class Game(GameBase):
 
         self.state = StateManager(self)
         self.audio = AudioManager()
+
 
     def on_start(self) -> None:
         # Cargar Recursos
