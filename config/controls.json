@@ -8,36 +8,16 @@
             "d",
             "right"
         ],
-        "down": [
-            "down",
-            "s"
-        ],
         "up": [
             "up",
             "w"
+        ],
+        "down": [
+            "down",
+            "s"
         ]
     },
     "ui": {
-        "select": [
-            "z",
-            "return"
-        ],
-        "back": [
-            "b",
-            "escape"
-        ],
-        "pause": [
-            "space",
-            "p"
-        ],
-        "down": [
-            "down",
-            "s"
-        ],
-        "up": [
-            "up",
-            "w"
-        ],
         "left": [
             "left",
             "a"
@@ -45,6 +25,26 @@
         "right": [
             "d",
             "right"
+        ],
+        "up": [
+            "up",
+            "w"
+        ],
+        "down": [
+            "down",
+            "s"
+        ],
+        "select": [
+            "return",
+            "g"
+        ],
+        "back": [
+            "backspace",
+            "escape"
+        ],
+        "pause": [
+            "space",
+            "p"
         ]
     }
 }
