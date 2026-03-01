@@ -5,8 +5,10 @@ from enfocate import SCREEN_SIZE
 
 from .game_state import GameState
 from .types import StateID, OverlayType
-from ..ui import UIManager, UIMenu, UILabel
+from ..ui import UIManager, UIButtonMenu, UILabel
 from ..constants import MIKU_PLAY_POSITION
+
+from ..resources import AudioCategory
 
 if TYPE_CHECKING:
     from ..core.game import Game
@@ -47,36 +49,9 @@ class GameOverState(GameState):
         mx, my = MIKU_PLAY_POSITION
         self._focus = (mx, my - 80)
 
-        # --- Fuentes ---
-        font_title = self.game.resources.get_font("Cursive", 100)
-        font_score = self.game.resources.get_font("Estandar", 48)
-        font_menu  = self.game.resources.get_font("Estandar", 48)
-
-        cx = SCREEN_SIZE[0] // 2
-
-        options = [
-            ("REINTENTAR",     self._on_retry),
-            ("VOLVER AL MENU", self._on_menu),
-            ("SALIR",          self._on_exit),
-        ]
-
-        # --- UI: se crea oculta y se revela con fade en fase UI ---
-        self.title      = UILabel("game_title",    cx, 150, "Game Over :(", font_title, (255, 0, 0), visible=False, alpha=0)
-        self.score_text = UILabel("final_score",   cx, 290, f"Puntuacion final: {self.play_state.score_manager.score}", font_score, visible=False, alpha=0)
-        self.menu       = UIMenu("game_over_menu", cx, 410, options, font_menu, spacing=70, center_text=True, visible=False, alpha=0)
-
-        self.ui = UIManager()
-        self.ui.add_element(self.title)
-        self.ui.add_element(self.score_text)
-        self.ui.add_element(self.menu)
-
-        # Surface donde se escribe el zoom cada frame.
-        self._zoomed_surface = pygame.Surface(SCREEN_SIZE)
-
-        # Overlay negro semitransparente.
-        self._overlay = pygame.Surface(SCREEN_SIZE)
-        self._overlay.set_alpha(200)
-        self._overlay.fill((0, 0, 0))
+        self._build_visuals()
+        self._build_fonts()
+        self._build_ui()
 
     def on_enter(self) -> None:
         self.game.audio.stop_music()
@@ -91,11 +66,15 @@ class GameOverState(GameState):
     def handle_input(self, events: list[pygame.event.Event]) -> None:
         if not self._menu_active:
             return
+        
         if self.game.input.is_action_pressed("ui", "up"):
+            self.game.audio.play_sfx("scroll")
             self.menu.move_up()
         elif self.game.input.is_action_pressed("ui", "down"):
+            self.game.audio.play_sfx("scroll")
             self.menu.move_down()
         elif self.game.input.is_action_pressed("ui", "select"):
+            self.game.audio.play_sfx("select")
             self.menu.execute_selected()
 
     # --- UPDATE ---
@@ -116,8 +95,9 @@ class GameOverState(GameState):
                     for element in (self.title, self.score_text):
                         element.visible = True
                         element.fade_to(255, _FADE_DURATION)
+                    
                     self.menu.visible = True
-                    self.menu.fade_to_all(255, _FADE_DURATION)
+                    self.menu.fade_to(255, _FADE_DURATION)
 
             case _Phase.UI:
                 self.ui.update(dt)
@@ -167,6 +147,61 @@ class GameOverState(GameState):
             pygame.transform.smoothscale(region, (w, h), self._zoomed_surface)
         except ValueError:
             pass
+    
+    def _build_visuals(self) -> None:
+        # Surface donde se escribe el zoom cada frame.
+        self._zoomed_surface = pygame.Surface(SCREEN_SIZE)
+
+        # Overlay negro semitransparente.
+        self._overlay = pygame.Surface(SCREEN_SIZE)
+        self._overlay.set_alpha(200)
+        self._overlay.fill((0, 0, 0))
+
+    def _build_fonts(self):
+        self.fonts = {
+            "title": self.game.resources.get_font("Cursive", 100),
+            "score": self.game.resources.get_font("Estandar", 48),
+            "menu": self.game.resources.get_font("Estandar", 48)
+        }
+    
+    def _build_ui(self) -> None:
+        """Se crea oculta y se revela con fade en fase UI."""
+
+        options = [
+            ("Reintentar",      self._on_retry),
+            ("Volver al menu",  self._on_menu),
+            ("Salir",           self._on_exit)
+        ]
+
+        screen_center_w = SCREEN_SIZE[0] // 2
+
+        self.title = UILabel(
+            "game_title", screen_center_w, 130, "Perdiste! :(", self.fonts["title"],
+            (255, 0, 0), visible=False, alpha=0
+            )
+        self.score_text = UILabel(
+            "final_score", screen_center_w, 265,
+            f"Puntuacion final: {self.play_state.score_manager.score}",
+            self.fonts["score"], visible=False, alpha=0
+            )
+        
+        btn_surface = pygame.Surface((370, 60), pygame.SRCALPHA)
+        pygame.draw.rect(btn_surface, (50, 40, 70), btn_surface.get_rect(), border_radius=45)
+
+        sel_surface = pygame.Surface((370, 60), pygame.SRCALPHA)
+        pygame.draw.rect(sel_surface, (110, 80, 200), sel_surface.get_rect(), border_radius=45)
+        pygame.draw.rect(sel_surface, (255, 255, 255), sel_surface.get_rect(), width=5, border_radius=45) 
+
+        self.menu = UIButtonMenu(
+            "game_over_menu", screen_center_w, 370, options, btn_surface,
+            sel_surface, self.fonts["menu"], (255, 255, 255), center_x=True,
+            spacing=20, visible=False, alpha=0
+        )
+
+        self.ui: UIManager = UIManager()
+        self.ui.add_element(self.title)
+        self.ui.add_element(self.score_text)
+        self.ui.add_element(self.menu)
 
     @property
     def overlay_type(self) -> OverlayType:
@@ -175,6 +210,8 @@ class GameOverState(GameState):
     @property
     def is_transient(self) -> bool:
         return False
+
+
 
     # --- CALLBACKS ---
     def _on_exit(self):

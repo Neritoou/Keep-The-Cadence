@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from .types import StateID, OverlayType
 from .game_state import GameState
 
+from ..resources import AudioCategory
 from ..ui import UIManager, UISlideMenu
 
 if TYPE_CHECKING:
@@ -26,7 +27,8 @@ class MenuState(GameState):
         self._build_ui()
         
     def on_enter(self) -> None:
-        pass
+        path = self.game.resources.get_music_path("freaky")
+        self.game.audio.play_music(path)
     
     def on_exit(self) -> None:
         return
@@ -43,10 +45,13 @@ class MenuState(GameState):
 
     def handle_input(self, events: list[pygame.event.Event]) -> None:
         if self.game.input.is_action_pressed("ui", "up"):
+            self.game.audio.play_sfx("scroll")
             self.menu.move_up()
         if self.game.input.is_action_pressed("ui", "down"):
+            self.game.audio.play_sfx("scroll")
             self.menu.move_down()
         if self.game.input.is_action_pressed("ui", "select"):
+            self.game.audio.play_sfx("select")
             self.menu.execute_selected()
             
     
@@ -65,7 +70,7 @@ class MenuState(GameState):
             ("CREDITOS", self._on_credits),
             ("SALIR", self._on_exit)
         ]
-        
+
         icons_btn = self.game.resources.get_spritesheet("MenuIcons").get_frames_at_col(0)
 
         btn_surface = pygame.Surface((700, 80), pygame.SRCALPHA)

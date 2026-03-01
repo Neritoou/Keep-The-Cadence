@@ -64,17 +64,27 @@ class SongSelectState(GameState):
 
     def handle_input(self, events: list[pygame.event.Event]) -> None:
         if self.game.input.is_action_pressed("ui", "up"):
+            self.game.audio.play_sfx("scroll")
             self.songs_menu.move_up()
             self._move_song(-1)
+            
         elif self.game.input.is_action_pressed("ui", "down"):
+            self.game.audio.play_sfx("scroll")
             self.songs_menu.move_down()
             self._move_song(1)
+
         elif self.game.input.is_action_pressed("ui", "left"):
+            self.game.audio.play_sfx("scroll")
             self._move_diff(-1)
+
         elif self.game.input.is_action_pressed("ui", "right"):
+            self.game.audio.play_sfx("scroll")
             self._move_diff(1)
+
         elif self.game.input.is_action_pressed("ui", "select"):
+            self.game.audio.play_sfx("select")
             self._try_start_game()
+
         elif self.game.input.is_action_pressed("ui", "back"):
             self.game.state.change_with_transition(StateID.MENU)
 
@@ -124,7 +134,7 @@ class SongSelectState(GameState):
         total_w += gap * (len(self._hint_renders) - 1)
 
         cur_x = (self.w - total_w) // 2
-        text_y = bar_y + 11
+        text_y = bar_y + 8
 
         for k_surf, a_surf in self._hint_renders:
             surface.blit(k_surf, (cur_x, text_y))
@@ -221,11 +231,11 @@ class SongSelectState(GameState):
         # --- Construcción de la UI y superficies ---
     def _build_fonts(self) -> None:
         self.fonts = {
-            'title': self.game.resources.get_font("Alternative", 90),
-            'song': self.game.resources.get_font("Alternative", 48),
-            'button': self.game.resources.get_font("Estandar", 48),
-            'medium': self.game.resources.get_font("Alternative", 42),
-            'small': self.game.resources.get_font("Alternative", 35)
+            "title": self.game.resources.get_font("Alternative", 90),
+            "song": self.game.resources.get_font("Alternative", 48),
+            "button": self.game.resources.get_font("Estandar", 48),
+            "medium": self.game.resources.get_font("Alternative", 42),
+            "small": self.game.resources.get_font("Alternative", 35)
         }
     
     def _build_static_surfaces(self) -> None:
@@ -239,17 +249,16 @@ class SongSelectState(GameState):
 
         self._hint_renders: list[tuple[pygame.Surface, pygame.Surface]] = []
         for key_str, action_str in self._build_hints():
-            k = self.fonts['small'].render(f"[{key_str}]", True, (190, 165, 255))
-            a = self.fonts['small'].render(f" {action_str}", True, (150, 135, 190))
+            k = self.fonts["small"].render(f"[{key_str}]", True, (190, 165, 255))
+            a = self.fonts["small"].render(f" {action_str}", True, (150, 135, 190))
             self._hint_renders.append((k, a))
 
     def _build_ui(self) -> None:
         """Construye todos los elementos de la UI."""
-        self._ui = UIManager()
 
         # Título y Contador
-        self.title = UILabel("select_title", 60, 40, "Lista de Canciones", self.fonts['title'], (60, 40, 40), center=False)
-        self.count_str = UILabel("song_count", 90, 130, "1 / X", self.fonts['small'], (60, 40, 40), center=False)
+        self.title = UILabel("select_title", 60, 40, "Lista de Canciones", self.fonts["title"], (60, 40, 40), center=False)
+        self.count_str = UILabel("song_count", 90, 130, "1 / X", self.fonts["small"], (60, 40, 40), center=False)
 
         # Menú deslizable de canciones
         song_options = [
@@ -271,9 +280,9 @@ class SongSelectState(GameState):
             menu_icons.append(icon)
 
         self.songs_menu = UISlideMenu(
-            "songs_menu", 520, 180, song_options, btn_surface, self.fonts['button'],
-            (60, 40, 40), selected_surface=sel_surface, content_padding=30, spacing=15, hidden_offset=110,
-            icons=menu_icons, show_selected_icon=True
+            "songs_menu", 520, 180, song_options, btn_surface, self.fonts["button"],
+            (60, 40, 40), selected_surface=sel_surface, content_padding=30,
+            spacing=15, hidden_offset=110, icons=menu_icons, show_selected_icon=True
         )
 
         # Sprites de estrellas para el panel (evitamos cargarlas de nuevo dentro del panel)
@@ -289,7 +298,8 @@ class SongSelectState(GameState):
             stars_sprites, BG_PANEL, BD_PANEL
         )
 
-        # Agregamos todo al manager
+        # Manager
+        self._ui = UIManager()
         self._ui.add_element(self.title)
         self._ui.add_element(self.count_str)
         self._ui.add_element(self.songs_menu)
