@@ -31,5 +31,7 @@ def _load_spritesheets(rm: "ResourceManager") -> None:
         # ICONOS PARA EL MENU DE OPCIONES
         rm.load_spritesheet("MenuIcons", str(get_asset("spritesheets", "menu_icons.png")), MENU_ICON_SIZE, STANDARD_PADDING)
 
-        rm.load_spritesheet("Stars",str(get_asset("spritesheets", "stars.png")),STARS_ICON_SIZE, STANDARD_PADDING)
-        rm.load_spritesheet("StageNormies",str(get_asset("spritesheets","stage_normies.png")),(1280,720),(5,5))
+        rm.load_spritesheet("Stars",str(get_asset("spritesheets", "stars.png")), STARS_ICON_SIZE, STANDARD_PADDING)
+        rm.load_spritesheet("StageNormies",str(get_asset("spritesheets","stage_normies.png")), (1280, 720), (5,5))
+
+        rm.load_spritesheet("MenuOptions", str(get_asset("spritesheets", "menu_images.png")), (888, 700), STANDARD_PADDING)
