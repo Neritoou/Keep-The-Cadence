@@ -99,7 +99,7 @@ class MenuState(GameState):
         self.game.state.change_with_transition(StateID.OPTIONS)
 
     def _on_credits(self):
-        print("ESCENA DE CREDITOS")
-    
+        self.game.state.change_with_transition(StateID.CREDITS)    
+
     def _on_exit(self):
         self.game._stop_context()

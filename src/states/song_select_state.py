@@ -1,7 +1,6 @@
 import pygame
 from typing import TYPE_CHECKING
 from enfocate import SCREEN_SIZE
-
 from .game_state import GameState
 from .types import StateID, OverlayType
 
@@ -16,6 +15,7 @@ if TYPE_CHECKING:
 PREVIEW_DELAY_MS    = 300       # ms de espera antes de arrancar el preview
 PREVIEW_START_SEC   = 30.0      # segundo desde el que empieza
 PREVIEW_DURATION_MS = 30_000    # duración del fragmento en ms (30 s)
+_SELECT_SFX_DELAY_MS = 900.0
 
 DIFF_ORDER = [DifficultyName.EASY, DifficultyName.NORMAL, DifficultyName.HARD]
 
@@ -29,7 +29,6 @@ class SongSelectState(GameState):
 
     def __init__(self, game: "Game") -> None:
         super().__init__(game)
-
         self._songs      = self.game.database.songs
         self._song_index = 0
         self._diff_index = 1
@@ -56,11 +55,14 @@ class SongSelectState(GameState):
         self._build_static_surfaces()
         self._build_ui()
 
+        self._select_timer: float | None = None
+
+
     def on_enter(self) -> None:
         self._reset_preview()
 
     def on_exit(self) -> None:
-        self.game.audio.stop_all_sounds()
+        pass
 
     def handle_input(self, events: list[pygame.event.Event]) -> None:
         if self.game.input.is_action_pressed("ui", "up"):
@@ -82,15 +84,20 @@ class SongSelectState(GameState):
             self._move_diff(1)
 
         elif self.game.input.is_action_pressed("ui", "select"):
-            self.game.audio.play_sfx("select")
             self._try_start_game()
 
         elif self.game.input.is_action_pressed("ui", "back"):
             self.game.state.change_with_transition(StateID.MENU)
 
     def update(self, dt: float) -> None:
+        if self._select_timer is not None:
+            self._select_timer -= dt * 1000
+            if self._select_timer <= 0:
+                self._select_timer = None
+                self._do_start_game()
+            return
+        
         self.count_str.set_text(f"{self._song_index + 1} / {len(self._songs)}")
-
         current_diff = self._get_current_diff()
         records = current_diff.records if current_diff else []
         
@@ -192,12 +199,15 @@ class SongSelectState(GameState):
 
     def _try_start_game(self) -> None:
         diff = self._get_current_diff()
-
         if diff is None:
             return
-        
+        self.game.audio.play_sfx("start")
+        self._select_timer = _SELECT_SFX_DELAY_MS
+
+    def _do_start_game(self) -> None:
         song = self._get_current_song()
-        self.game.audio.stop_music()   # fade antes de cambiar de estado
+        self.game.audio.stop_music()
+        self.game.audio.stop_all_sounds()
         self.game.state.change_with_transition(
             StateID.PLAY,
             song_folder=song.name,

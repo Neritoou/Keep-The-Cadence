@@ -28,7 +28,7 @@ class PauseState(GameState):
     
     def on_exit(self) -> None:
         pass
-    
+
     def handle_input(self, events: list[pygame.event.Event]) -> None:
         if self.game.input.is_action_pressed("ui", "up"):
             self.game.audio.play_sfx("scroll")
@@ -39,7 +39,6 @@ class PauseState(GameState):
             self.menu.move_down()
 
         elif self.game.input.is_action_pressed("ui", "select"):
-            self.game.audio.play_sfx("select")
             self.menu.execute_selected()
             
         elif  self.game.input.is_action_pressed("ui", "pause"):
@@ -107,17 +106,21 @@ class PauseState(GameState):
     # --- Callbacks ---
     def _on_resume(self):
         """Continúa el juego."""
+        self.game.audio.play_sfx("select")
         self.game.state.exit_current()
     
     def _on_restart(self):
+        self.game.audio.play_sfx("start")
         self.game.state.exit_current()
         self.play_state.restart()
     
     def _on_menu(self):
         """Vuelve al menú principal."""
+        self.game.audio.play_sfx("start")
         self.game.state.clear()
         self.game.state.change(StateID.SONG_SELECT)
 
     def _on_options(self):
         """Vuelve al menú principal."""
+        self.game.audio.play_sfx("select")
         self.game.state.change(StateID.OPTIONS)

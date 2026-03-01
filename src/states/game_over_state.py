@@ -56,6 +56,7 @@ class GameOverState(GameState):
     def on_enter(self) -> None:
         self.game.audio.stop_music()
         self.game.audio.stop_all_sounds()
+        self.game.audio.play_sfx("loss")
         self.game.character.press_miss(self._final_direction)
         self.game.character.animator.go_to_frame(len(self.game.character.animator.frames) - 1)
 
@@ -218,9 +219,11 @@ class GameOverState(GameState):
         self.game._stop_context()
 
     def _on_retry(self):
+        self.game.audio.play_sfx("start")
         self.game.state.exit_current()
         self.play_state.restart()
 
     def _on_menu(self):
+        self.game.audio.play_sfx("start")
         self.game.state.clear()
         self.game.state.change(StateID.MENU)

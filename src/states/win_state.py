@@ -89,6 +89,8 @@ class WinState(GameState):
 
     def on_enter(self) -> None:
         self.game.audio.stop_all_sounds()
+        win_music = self.game.resources.get_music_path("win")
+        self.game.audio.play_music(win_music, loops=-1, fade_ms=500)
         self.game.character.set_position((_CHAR_X, _CHAR_Y))
         self.game.character.reset()
         self.game.character.play_win()
@@ -126,21 +128,18 @@ class WinState(GameState):
         bar_y = self.h - 50
         surface.blit(self._hint_bar, (0, bar_y))
 
-        # Centrar todos los hints en la barra
-        gap = 38
-        total_w = sum(p.get_width() + k.get_width() + a.get_width() for p, k, a in self._hint_renders)
+        gap = 3
+        total_w = self._hint_renders[0].get_width() + self._hint_renders[1].get_width() + self._hint_renders[2].get_width()
         total_w += gap * (len(self._hint_renders) - 1)
 
         cur_x = (self.w - total_w) // 2
-        text_y = bar_y + 8
-
-        for p_surf, k_surf, a_surf in self._hint_renders:
-            surface.blit(p_surf, (cur_x, text_y))
-            cur_x += p_surf.get_width()
-            surface.blit(k_surf, (cur_x, text_y))
-            cur_x += k_surf.get_width()
-            surface.blit(a_surf, (cur_x, text_y))
-            cur_x += a_surf.get_width() + gap
+        text_y = bar_y + 7
+        
+        surface.blit(self._hint_renders[0], (cur_x, text_y))
+        cur_x += self._hint_renders[0].get_width() + gap
+        surface.blit(self._hint_renders[1], (cur_x, text_y))
+        cur_x += self._hint_renders[1].get_width() + gap
+        surface.blit(self._hint_renders[2], (cur_x, text_y))
 
     def _draw_stars(self, surface: pygame.Surface) -> None:
         star_w  = self._base_star.get_width()
@@ -152,12 +151,6 @@ class WinState(GameState):
         for i in range(MAX_STARS):
             frame = self._full_star if (self._reveal_stars and i < self._record.stars) else self._base_star
             surface.blit(frame, (start_x + i * (star_w + padding), y))
-
-    def _build_hints(self) -> list[tuple[str, str]]:
-        k = self.game.controls_config
-        return [
-            (get_hint_key(k,"select"),"para seleccionar otra canción.")
-        ]
     
     def _build_fonts(self) -> None:
         self._fonts = {
@@ -173,12 +166,14 @@ class WinState(GameState):
         self._hint_bar = pygame.Surface((self.w, 50), pygame.SRCALPHA)
         self._hint_bar.fill((8, 4, 18))
 
-        self._hint_renders: list[tuple[pygame.Surface, pygame.Surface, pygame.Surface]] = []
-        for key_str, action_str in self._build_hints():
-            p = self._fonts["small"].render(f"Presiona", True, (150, 135, 190))
-            k = self._fonts["small"].render(f" [{key_str}]", True, (190, 165, 255))
-            a = self._fonts["small"].render(f" {action_str}", True, (150, 135, 190))
-            self._hint_renders.append((p, k, a))
+        k_config = self.game.controls_config
+        key_str = get_hint_key(k_config, "select")
+
+        p = self._fonts["small"].render(f"Presiona", True, (150, 135, 190))
+        k = self._fonts["small"].render(f" [{key_str}]", True, (190, 165, 255))
+        a = self._fonts["small"].render(f" para seleccionar otra canción.", True, (150, 135, 190))
+
+        self._hint_renders: tuple[pygame.Surface, pygame.Surface, pygame.Surface] = (p, k, a)
 
     def _build_ui(self) -> None:
         # --- Labels estáticos ---
@@ -269,6 +264,7 @@ class WinState(GameState):
         element.fade_to(255, fade_duration)
 
     def _on_menu(self) -> None:
+        self.game.audio.play_sfx("start")
         self.game.state.clear()
         self.game.state.change(StateID.SONG_SELECT)
 
