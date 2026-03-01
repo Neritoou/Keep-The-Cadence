@@ -4,15 +4,14 @@ from typing import TYPE_CHECKING
 from .music_editor_controller import MusicEditorController
 from .note_editor_controller import NoteEditorController
 from .note_section_editor import NoteSectionEditor
-from ..note_renderer import NoteRenderer
+from ..note import NoteRenderer
 from .chart_editor_ui import ChartEditorUI
 from ..types import NoteDirection
 from .types import EditorKeyState, EditorInfo
 from ...constants import MISS_DISPLAY
 
 if TYPE_CHECKING:
-    from ..types import ScrollDirection, JsonChartData, JsonSectionData
-    from ..types import NoteDataType
+    from ..types import ScrollDirection, JsonChartData, JsonSectionData, NoteDataType
 
 class ChartEditor:
     """Editor de charts"""

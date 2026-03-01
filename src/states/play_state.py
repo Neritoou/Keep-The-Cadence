@@ -1,12 +1,10 @@
 import pygame
 from typing import TYPE_CHECKING
-from enfocate import SCREEN_SIZE
 from .game_state import GameState
 from .types import OverlayType, StateID
-from ..resources.types import AudioCategory
 
 from ..core.chart_player import ChartLoader, ChartPlayer
-from ..core.note_input_handler import NoteInputHandler
+from ..core.note import NoteInputHandler
 from ..core.scoring import ScoreManager
 from ..core.types import Judgement, NoteDirection
 from ..core.difficulty_data import DIFFICULTY_DATA
@@ -17,8 +15,6 @@ from ..ui import PerformanceBar, UILabel, UIManager, UIJudgementLabel
 if TYPE_CHECKING:
     from ..core.game import Game
     from ..core.database import DifficultyName
-
-
 
 class PlayState(GameState):
     """Estado principal del juego donde se reproduce el chart."""

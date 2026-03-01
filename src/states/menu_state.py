@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 from .types import StateID, OverlayType
 from .game_state import GameState
 
-from ..resources import AudioCategory
 from ..ui import UIManager, UISlideMenu
 
 if TYPE_CHECKING:

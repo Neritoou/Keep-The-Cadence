@@ -1,17 +1,16 @@
 from typing import TYPE_CHECKING, Callable
 from random import choice
 
-from .types import NoteDirection, Judgement
+from ..types import NoteDirection, Judgement
 from .note import Note
-from .note import NoteState
-from .scoring import ScoreManager
-from ..constants import HOLD_END_WINDOW_MS, INPUT_OFFSET_MS
+from ..types import NoteState
+from ..scoring import ScoreManager
+from ...constants import HOLD_END_WINDOW_MS, INPUT_OFFSET_MS
 
 if TYPE_CHECKING:
     from .note_renderer import NoteRenderer
-    from .character import Character
-    from .chart_player import ChartPlayer
-
+    from ..character import Character
+    from ..chart_player import ChartPlayer
 
 class NoteInputHandler:
     """

@@ -8,8 +8,6 @@ from .types import StateID, OverlayType
 from ..ui import UIManager, UIButtonMenu, UILabel
 from ..constants import MIKU_PLAY_POSITION
 
-from ..resources import AudioCategory
-
 if TYPE_CHECKING:
     from ..core.game import Game
     from ..states import PlayState

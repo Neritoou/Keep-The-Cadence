@@ -1,12 +1,11 @@
 from pygame import Surface, Rect
 from typing import TYPE_CHECKING
-from ..resources import Animation
-from .receptor_state import ReceptorFSM, NoteReceptorState
+from ...resources import Animation
+from ..receptor_state import ReceptorFSM, NoteReceptorState
 
 if TYPE_CHECKING:
     from .note import Note
-    from .types import NoteDataType, NoteDirection
-    from .types import ScrollDirection
+    from ..types import NoteDataType, NoteDirection, ScrollDirection
 
 class NoteRenderer:
     """

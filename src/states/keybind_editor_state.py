@@ -4,10 +4,9 @@ from enfocate import SCREEN_SIZE
 
 from .game_state import GameState
 from .types import OverlayType
-from ..config.keybind_editor import KeybindEditor
+from ..config import KeybindEditor
 from ..util.conversors import pygame_key_to_str
-from ..ui import UIManager, UILabel
-from ..ui.components.button import UIButton
+from ..ui import UIManager, UILabel, UIButton
 
 if TYPE_CHECKING:
     from ..core.game import Game

@@ -1,16 +1,9 @@
 from typing import TYPE_CHECKING
-from .types import Judgement
-from enum import Enum, auto
+from ..types import Judgement, NoteState
 
 if TYPE_CHECKING:
-    from .types import NoteDirection
+    from ..types import NoteDirection
 
-class NoteState(Enum):
-    PENDING   = auto() 
-    ACTIVE    = auto() 
-    COMPLETED = auto() 
-    MISSED    = auto() 
-    
 class Note:
     def __init__(self, hit_time: float, duration: float, direction: "NoteDirection"):
         self.hit_time  = hit_time

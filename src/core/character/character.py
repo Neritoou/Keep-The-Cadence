@@ -1,7 +1,7 @@
 from pygame import Surface
-from ..resources import Animation
-from .types import NoteDirection
-from .receptor_state import CharacterReceptorState, ReceptorFSM
+from ...resources import Animation
+from ..types import NoteDirection
+from ..receptor_state import CharacterReceptorState, ReceptorFSM
 
 class Character:
     """
