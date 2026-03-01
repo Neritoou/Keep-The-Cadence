@@ -4,10 +4,13 @@ from ..types import ChartData
 from ..note import Note
 from ...audio import AudioCategory
 from ...util.paths import get_inst_path, get_voices_path
+from ...constants import INPUT_OFFSET_MS
 
 if TYPE_CHECKING:
     from ...audio import AudioManager
     from ..types import Section
+    from ..difficulty_data import DifficultyData
+
 
 class ChartPlayer:
     """
@@ -25,7 +28,7 @@ class ChartPlayer:
     """
     
     def __init__(self, chart: ChartData, audio_manager: "AudioManager",
-                 song_folder: str, spawn_time_ms: float):
+                 song_folder: str, spawn_time_ms: float, diff_data: "DifficultyData"):
         """
         Args:
             chart: Chart ya parseado y listo para reproducir.
@@ -37,6 +40,7 @@ class ChartPlayer:
         self.chart = chart
         self.audio = audio_manager
         self.spawn_time_ms = spawn_time_ms
+        self.diff_data = diff_data
 
         # Paths resueltos de los archivos de audio
         self._inst_path = str(get_inst_path(song_folder))
@@ -89,6 +93,9 @@ class ChartPlayer:
         self.audio.play_music(self._inst_path, loops=0, start=start_time / 1000)
         self._voice_channel = self._voice_sound.play()
 
+        if self._is_voice_muted and self._voice_channel:
+            self._voice_channel.set_volume(0.0)
+
         self.current_time = start_time
         self._start_tick = pygame.time.get_ticks() - int(start_time)
         self._playing = True
@@ -117,20 +124,25 @@ class ChartPlayer:
         self._playing = True
 
     def stop(self) -> None:
-        """
-        Detiene completamente la reproducción y resetea el estado interno.
-        Resetea también el chart para que pueda volver a reproducirse desde cero.
-        """
+        """Detiene completamente la reproducción y audio del estado interno."""
         self.audio.stop_music()
 
         if self._voice_channel:
             self._voice_channel.stop()
             self._voice_channel = None
 
-        self.chart.reset()
+        self.audio.stop_category(AudioCategory.VOICE)
         self._playing = False
+
+    def reset(self) -> None:
+        """Resetea el chart al estado inicial para poder volver a reproducirlo."""
+        if self._is_voice_muted:
+            self.unmute_voices()
+
+        self.chart.reset()
         self.current_time = 0.0
         self._active_notes.clear()
+        
 
     def cleanup(self) -> None:
         """
@@ -186,7 +198,7 @@ class ChartPlayer:
         """
         missed = []
         for note in self._active_notes:
-            if note.is_missed(self.current_time):
+            if note.is_missed(self.current_time - INPUT_OFFSET_MS, self.diff_data.judgement_windows):
                 note.on_missed()
                 missed.append(note)
         return missed
@@ -210,3 +222,18 @@ class ChartPlayer:
         if self.chart.song_duration == 0:
             return 100.0
         return (self.current_time / self.chart.song_duration) * 100
+
+    @property
+    def real_time(self) -> float:
+        """Tiempo real en ms en el momento de la llamada, sin esperar a update()."""
+        if not self._playing:
+            return self.current_time
+        return float(pygame.time.get_ticks() - self._start_tick)
+    
+
+    @property
+    def current_notes(self) -> list[Note]:
+        """Notas activas calculadas al tiempo real actual, no al del último frame."""
+        if not self._playing:
+            return self._active_notes
+        return self.chart.get_current_notes(self.real_time, self.spawn_time_ms)

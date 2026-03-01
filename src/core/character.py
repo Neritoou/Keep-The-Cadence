@@ -1,7 +1,7 @@
 from pygame import Surface
 from ..resources import Animation
 from .types import NoteDirection
-from .receptor_state import ReceptorState, ReceptorFSM
+from .receptor_state import CharacterReceptorState, ReceptorFSM
 
 class Character:
     """
@@ -27,7 +27,7 @@ class Character:
         self.bpm = bpm
         self._beat_timer = 0.0
         self._ms_per_beat = 60000.0 / bpm
-        self.receptor = ReceptorFSM()
+        self.receptor = ReceptorFSM(state=CharacterReceptorState.IDLE)
 
         self.animator = Animation(
             animations = animations,
@@ -42,6 +42,10 @@ class Character:
     @property
     def sing_duration(self) -> float:
         return self._sing_duration
+    
+    def reset(self) -> None:
+        """Resetea el personaje al estado idle."""
+        self._go_idle()
 
     def _recalculate_timing(self) -> None:
         self._ms_per_beat = 60000.0 / self.bpm
@@ -53,17 +57,20 @@ class Character:
         self.bpm = value
         self._recalculate_timing()
 
+    def set_position(self, position: tuple[int,int]) -> None:
+        self.position = position
+
     # --- INPUT ---
     def press_hit(self, direction: NoteDirection) -> None:
         """Notifica al personaje que se acertó una nota."""
         self.receptor.direction = direction
-        self.receptor.state = ReceptorState.HOLD_HIT
+        self.receptor.state = CharacterReceptorState.HOLD_HIT
         self.receptor.timer = 0.0
 
     def press_miss(self, direction: NoteDirection) -> None:
         """Notifica al personaje que se falló una nota."""
-        self.receptor.state = ReceptorState.HOLD_MISS
         self.receptor.direction = direction
+        self.receptor.state = CharacterReceptorState.HOLD_MISS
         self.receptor.timer = 0.0
 
     def release_key(self, direction: "NoteDirection") -> None:
@@ -72,25 +79,32 @@ class Character:
             return
         
         match self.receptor.state:
-            case ReceptorState.HOLD_HIT:
-                self.receptor.state = ReceptorState.RELEASE_HIT
-            case ReceptorState.HOLD_MISS:
-                self.receptor.state = ReceptorState.RELEASE_MISS
+            case CharacterReceptorState.HOLD_HIT:
+                self.receptor.state = CharacterReceptorState.RELEASE_HIT
+            case CharacterReceptorState.HOLD_MISS:
+                self.receptor.state = CharacterReceptorState.RELEASE_MISS
+
+    def play_win(self) -> None:
+        self.receptor.state = CharacterReceptorState.WIN
+        self.animator.play("win", reset=True, loop=False)
 
     # --- UPDATE ---
     def update(self, dt: float) -> None:
-        """Actualiza la FSM y la animación del personaje."""        
+        """Actualiza la FSM y la animación del personaje."""    
+
         match self.receptor.state:
-            case ReceptorState.IDLE:
+            case CharacterReceptorState.IDLE:
                 self._update_idle(dt)
-            case ReceptorState.HOLD_HIT:
+            case CharacterReceptorState.HOLD_HIT:
                 self._update_hold_hit(dt)
-            case ReceptorState.HOLD_MISS:
+            case CharacterReceptorState.HOLD_MISS:
                 self._update_hold_miss(dt)
-            case ReceptorState.RELEASE_HIT:
+            case CharacterReceptorState.RELEASE_HIT:
                 self._update_release_hit(dt)
-            case ReceptorState.RELEASE_MISS:
+            case CharacterReceptorState.RELEASE_MISS:
                 self._update_release_miss(dt)
+            case CharacterReceptorState.WIN:
+                self._update_win(dt)
 
     def _update_idle(self, dt: float) -> None:
         self._beat_timer += dt * 1000
@@ -143,8 +157,11 @@ class Character:
         if self.receptor.timer >= self._sing_duration:
             self._go_idle()
 
+    def _update_win(self, dt: float) -> None:
+        self.animator.update(dt)
+
     def _go_idle(self) -> None:
-        self.receptor.state = ReceptorState.IDLE
+        self.receptor.state = CharacterReceptorState.IDLE
         self.receptor.direction = None
         self.receptor.timer = 0.0
         self._beat_timer = 0.0  # Empieza a contar desde el momento que vuelve a idle
@@ -173,7 +190,7 @@ class Character:
 
         name = self.receptor.direction.name.lower()
 
-        if self.receptor.state in (ReceptorState.HOLD_HIT, ReceptorState.RELEASE_HIT):
+        if self.receptor.state in (CharacterReceptorState.HOLD_HIT, CharacterReceptorState.RELEASE_HIT):
             return f"sing_{name}"
 
         return f"miss_{name}"

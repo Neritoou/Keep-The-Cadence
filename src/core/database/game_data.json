@@ -1,0 +1,79 @@
+{
+    "songs": [
+        {
+            "id": 0,
+            "name": "Aishite",
+            "difficulties": {
+                "EASY": {
+                    "records": []
+                },
+                "NORMAL": {
+                    "records": []
+                },
+                "HARD": {
+                    "records": []
+                }
+            }
+        },
+        {
+            "id": 1,
+            "name": "Popipo",
+            "difficulties": {
+                "EASY": {
+                    "records": []
+                },
+                "NORMAL": {
+                    "records": []
+                },
+                "HARD": {
+                    "records": []
+                }
+            }
+        },
+        {
+            "id": 2,
+            "name": "World is Mine",
+            "difficulties": {
+                "EASY": {
+                    "records": []
+                },
+                "NORMAL": {
+                    "records": []
+                },
+                "HARD": {
+                    "records": []
+                }
+            }
+        },
+        {
+            "id": 3,
+            "name": "Miku",
+            "difficulties": {
+                "EASY": {
+                    "records": []
+                },
+                "NORMAL": {
+                    "records": []
+                },
+                "HARD": {
+                    "records": []
+                }
+            }
+        },
+        {
+            "id": 4,
+            "name": "Love Words",
+            "difficulties": {
+                "EASY": {
+                    "records": []
+                },
+                "NORMAL": {
+                    "records": []
+                },
+                "HARD": {
+                    "records": []
+                }
+            }
+        }
+    ]
+}

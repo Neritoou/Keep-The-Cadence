@@ -21,7 +21,8 @@ class Animation:
         default: str,
         base_fps: int = 8,
         loop: bool = True,
-        fps_map: dict[str, int] | None = None
+        fps_map: dict[str, int] | None = None,
+        bpm: float | None = None,
     ) -> None:
         """
         Inicializa el sistema de animación.
@@ -32,14 +33,14 @@ class Animation:
             base_fps: FPS por defecto (mínimo 1)
             loop: Si las animaciones deben hacer loop por defecto
             fps_map: FPS específico para ciertas animaciones
-
+            bpm: BPM inicial para sincronización (None = desactivado)
         """
         self._assert_animations(animations, default)
-        
+    
         # Datos de animación
         self.animations = animations
         self.fps_map = fps_map or {}
-        
+
         # Estado actual
         self.current_animation = default
         self.frames = animations[default]
@@ -53,6 +54,10 @@ class Animation:
         self.playing = True
         self.time_acc = 0.0
         self._frame_time = self._calculate_frame_time()
+
+        # Beat Sync
+        self._ms_per_beat: float | None = (60000.0 / bpm) if bpm is not None else None
+        self._beat_timer: float = 0.0
 
     def play(self, name: str, reset: bool = False, loop: bool | None = None, start_frame: int = 0) -> None:
         """
@@ -118,7 +123,15 @@ class Animation:
         """Actualiza la animación según el tiempo transcurrido."""
         if not self.playing or len(self.frames) <= 1:
             return
-        
+                
+        # Beat sync — reinicia la animación en cada beat si está activado
+        if self._ms_per_beat is not None:
+            self._beat_timer += dt * 1000
+            if self._beat_timer >= self._ms_per_beat:
+                self._beat_timer -= self._ms_per_beat
+                self.frame_index = 0
+                self.time_acc    = 0.0
+
         # Protección contra lag
         dt = min(dt, MAX_DT_PER_UPDATE_ANIMATION)
         
@@ -148,7 +161,8 @@ class Animation:
             surface: Superficie de Pygame donde dibujar.
             position: Tupla (x, y) indicando la esquina superior izquierda.
         """
-        surface.blit(self.frames[self.frame_index], position)
+        frame = self.frames[self.frame_index]
+        surface.blit(frame, frame.get_rect(topleft=position))
 
     def draw_centered(self, surface: pygame.Surface, center: tuple[int,int]):
         """
@@ -159,48 +173,52 @@ class Animation:
             center: Tupla (x, y) indicando el centro del frame.
         """
         frame = self.frames[self.frame_index]
-        rect = frame.get_rect(center=center)
-        surface.blit(frame, rect)
+        surface.blit(frame, frame.get_rect(center=center))
 
-    # CONFIGURACIÓN
+    #  CONFIGURACIÓN
+
     def set_loop(self, loop: bool) -> None:
-        """
-        Configura si la animación actual se reproduce en bucle.
-        
-        Args:
-            loop: True para loop, False para one-shot
-        """
+        """Configura si la animación actual se reproduce en bucle."""
         self.loop = loop
-    
+
     def set_base_fps(self, fps: int) -> None:
-        """
-        Establece el FPS base para animaciones sin FPS específico.
-        
-        Args:
-            fps: Frames por segundo (mínimo 1)
-        """
+        """Establece el FPS base para animaciones sin FPS específico."""
         self.base_fps = max(1, fps)
         self._frame_time = self._calculate_frame_time()
-    
+
     def set_fps_for_animation(self, animation_name: str, fps: int) -> None:
         """Establece FPS específico para una animación."""
         self.fps_map[animation_name] = max(1, fps)
-        
-        # Si es la animación actual, actualizar frame_time
         if self.current_animation == animation_name:
             self._frame_time = self._calculate_frame_time()
-    
+
     def go_to_frame(self, frame_index: int) -> None:
         """Salta a un frame específico."""
         if frame_index < 0 or frame_index >= len(self.frames):
             raise IndexError(
                 f"Animation: frame_index {frame_index} out of range "
-                f"[0-{len(self.frames)-1}]"
+                f"[0-{len(self.frames) - 1}]"
             )
-        
         self.frame_index = frame_index
         self.time_acc = 0.0
-        
+
+    def sync_to_bpm(self, bpm: float) -> None:
+        """
+        Sincroniza la animación al BPM — se reinicia en cada beat.
+
+        Args:
+            bpm: Beats por minuto de la canción.
+        """
+        self._ms_per_beat = 60000.0 / bpm
+        self._beat_timer = 0.0
+
+    def unsync(self) -> None:
+        """Desactiva la sincronización al BPM."""
+        self._ms_per_beat = None
+        self._beat_timer = 0.0
+
+    # --- CONSULTAS ---
+
     def is_playing(self) -> bool:
         """Verifica si la animación está reproduciéndose."""
         return self.playing
@@ -208,59 +226,48 @@ class Animation:
     def is_last_frame(self) -> bool:
         """Verifica si llegó al último frame."""
         return self.frame_index >= len(self.frames) - 1
-    
+
     def get_current_frame(self) -> pygame.Surface:
-        """Obtiene el frame actual (sin transformaciones)."""
+        """Obtiene el frame actual."""
         return self.frames[self.frame_index]
-    
+
     def get_current_frame_index(self) -> int:
         """Obtiene el índice del frame actual."""
         return self.frame_index
-    
+
     def get_frame_count(self) -> int:
         """Obtiene el número total de frames de la animación actual."""
         return len(self.frames)
-    
+
     def get_animation_duration(self) -> float:
         """Calcula la duración total de la animación en segundos."""
         return len(self.frames) * self._frame_time
-    
+
     def get_current_animation_name(self) -> str:
         """Obtiene el nombre de la animación actual."""
         return self.current_animation
-    
+
     def has_animation(self, name: str) -> bool:
         """Verifica si existe una animación con ese nombre."""
         return name in self.animations
-    
-    def get_animations(self) -> dict[str, list[pygame.Surface]]: 
-        """Obtiene lista de todas las animaciones disponibles."""
+
+    def get_animations(self) -> dict[str, list[pygame.Surface]]:
+        """Obtiene todas las animaciones disponibles."""
         return self.animations
 
-    # --- HELPERS ---
-    def _assert_animations(self, animations: dict[str, list[pygame.Surface]], default: str) -> None:
-        """Valida los datos de entrada de las animaciones"""
+    #  --- HELPERS ---
+
+    def _assert_animations(self, animations: dict[str, list[pygame.Surface]],
+                            default: str) -> None:
         if not animations:
             raise ValueError("Animation: animations dict cannot be empty")
-        
         if default not in animations:
             raise ValueError(f"Animation: default '{default}' does not exist")
-        
         for name, frames in animations.items():
             if not frames:
                 raise ValueError(f"Animation: '{name}' has no frames")
-    
+
     def _calculate_frame_time(self) -> float:
         """Calcula la duración de un frame en segundos."""
         fps = self.fps_map.get(self.current_animation, self.base_fps)
         return 1.0 / max(1, fps)
-    
-    
-    def __repr__(self) -> str:
-        """Representación en string para debugging."""
-        status = "playing" if self.playing else "paused"
-        return (
-            f"Animation(current='{self.current_animation}', "
-            f"frame={self.frame_index}/{len(self.frames)}, "
-            f"status={status}, loop={self.loop})"
-        )

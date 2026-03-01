@@ -42,7 +42,7 @@ class AudioManager:
         pygame.mixer.set_num_channels(self._max_sound_channels)
 
         self._sound_categories: dict[AudioCategory, dict[str, pygame.mixer.Sound]] = {}
-    
+
     # MÚSICA (Background Music)
     def play_music(self, music_file: str, loops: int = -1, 
                    start: float = 0.0, fade_ms: int = 0) -> None:
@@ -160,7 +160,7 @@ class AudioManager:
 
         self._sound_categories[category].pop(key)
 
-    def play_sound(self, sound: pygame.mixer.Sound,
+    def play_sound(self, key: str, category: AudioCategory,
                    loops: int = 0, maxtime: int = 0, 
                    fade_ms: int = 0) -> pygame.mixer.Channel | None:
         """
@@ -177,10 +177,16 @@ class AudioManager:
             Canal donde se está reproduciendo o None
         """
         try:
-            return sound.play(loops=loops, maxtime=maxtime, fade_ms=fade_ms)
+            return self._sound_categories[category][key].play(loops=loops, maxtime=maxtime, fade_ms=fade_ms)
         except pygame.error as e:
             print(f"AudioManager: Error reproduciendo sonido: {e}")
             return None
+
+    def play_sfx(self, key: str) -> None:
+        self.play_sound(key, AudioCategory.SFX)
+
+    def play_voice(self, key: str) -> None:
+        self.play_sound(key, AudioCategory.VOICE)
     
     def stop_sound(self, sound: pygame.mixer.Sound) -> None:
         """Detiene todas las instancias de un sonido."""
@@ -189,6 +195,12 @@ class AudioManager:
     def stop_all_sounds(self) -> None:
         """Detiene todos los efectos de sonido."""
         pygame.mixer.stop()
+
+    def stop_category(self, category: AudioCategory) -> None:
+        """Detiene todos los sonidos de una categoría específica."""
+        for sound in self._sound_categories.get(category, {}).values():
+            sound.stop()
+
     
     def fadeout_sound(self, sound: pygame.mixer.Sound, fade_ms: int) -> None:
         """

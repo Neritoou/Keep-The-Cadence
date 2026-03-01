@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 from .character import Character
 from .types import NoteDirection
+from ..constants import MIKU_SIZE_MULTIPLIER
 
 if TYPE_CHECKING:
     from ..resources import ResourceManager
@@ -21,9 +22,12 @@ class CharacterFactory:
         animations = {}
         
         # IDLE
-        animations["idle"] = rm.get_spritesheet("MIKU_IDLE").get_frames_at_row(0,True)
+        animations["idle"] = rm.get_spritesheet("MIKU_IDLE").get_frames_at_row(0,True,MIKU_SIZE_MULTIPLIER)
         # HEY
-        animations["hey"] = rm.get_spritesheet("MIKU_HEY").get_frames_at_row(0,True)
+        animations["hey"] = rm.get_spritesheet("MIKU_HEY").get_frames_at_row(0,True,MIKU_SIZE_MULTIPLIER)
+        # WIN
+        sheet = rm.get_spritesheet("MIKU_WIN")
+        animations["win"] = [frame for i in range(5) for frame in sheet.get_frames_at_row(i,True,MIKU_SIZE_MULTIPLIER)]
 
         # SING DIRECTIONS
         directions_sheet = rm.get_spritesheet("MIKU_DIRECTIONS")
@@ -32,7 +36,7 @@ class CharacterFactory:
         for direction in NoteDirection:
             name = direction.name.lower()
             col = direction.value
-            animations[f"sing_{name}"] = directions_sheet.get_frames_at_col(col,True)
-            animations[f"miss_{name}"] = miss_sheet.get_frames_at_col(col,True)
+            animations[f"sing_{name}"] = directions_sheet.get_frames_at_col(col,True,MIKU_SIZE_MULTIPLIER)
+            animations[f"miss_{name}"] = miss_sheet.get_frames_at_col(col,True,MIKU_SIZE_MULTIPLIER)
         
         return animations

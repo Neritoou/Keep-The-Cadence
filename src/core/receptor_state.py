@@ -5,21 +5,24 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .types import NoteDirection
 
-class ReceptorState(Enum):
-    """
-    Estados posibles del receptor (lane / key receptor).
-
-    El receptor funciona como una pequeña máquina de estados (FSM)
-    que controla qué debe dibujarse y cómo debe comportarse la animación.
-    """
+class NoteReceptorState(Enum):
     IDLE = auto()
-    HOLD_HIT = auto()      # Animación confirm, frame 0 congelado
-    HOLD_MISS = auto()     # Imagen miss estática
-    RELEASE_HIT = auto()   # Animación confirm completa
-    RELEASE_MISS = auto()  # Transición de vuelta a static
+    HOLD_HIT = auto()
+    HOLD_MISS = auto()
+    RELEASE_HIT = auto()
+    RELEASE_MISS = auto()
 
+class CharacterReceptorState(Enum):
+    IDLE = auto()
+    HOLD_HIT = auto()
+    HOLD_MISS = auto()
+    RELEASE_HIT = auto()
+    RELEASE_MISS = auto()
+    WIN = auto()
+
+# FSM genérica — acepta cualquier Enum
 @dataclass
 class ReceptorFSM:
-    state: ReceptorState = ReceptorState.IDLE
+    state: Enum
     direction: "NoteDirection | None" = None
     timer: float = 0.0

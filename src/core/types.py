@@ -77,6 +77,12 @@ class Judgement(Enum):
     BAD     = auto()  # ±135ms
     MISS    = auto()  # nota no tocada
 
+class NoteState(Enum):
+    PENDING   = auto() 
+    ACTIVE    = auto() 
+    COMPLETED = auto() 
+    MISSED    = auto() 
+
 @dataclass
 class ChartData:
     """Representa los datos JSON del Chart pero en un dataclass"""
@@ -121,4 +127,8 @@ class ChartData:
         return result
 
     def reset(self) -> None:
+        for section in self.sections[:self._section_index + 2]:
+            for note in section.notes:
+                if note.state != NoteState.PENDING:
+                    note.reset()
         self._section_index = 0

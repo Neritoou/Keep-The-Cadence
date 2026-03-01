@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class ChartEditor:
     """Editor de charts"""
     def __init__(self, song_path: str, song_name: str, bpm: int, chart_path: str, hit_line_y: int, 
-                 hit_line_xs: tuple[int,int,int,int], scroll_direction: "ScrollDirection",
+                 hit_line_xs: tuple[int,...], scroll_direction: "ScrollDirection",
                  base_pixels_per_ms: float, spawn_time_ms: float, notes_data: "NoteDataType"):
         
         # Config Base

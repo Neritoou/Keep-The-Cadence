@@ -1,7 +1,7 @@
 from pygame import Surface, Rect
 from typing import TYPE_CHECKING
 from ..resources import Animation
-from .receptor_state import ReceptorFSM, ReceptorState
+from .receptor_state import ReceptorFSM, NoteReceptorState
 
 if TYPE_CHECKING:
     from .note import Note
@@ -13,7 +13,7 @@ class NoteRenderer:
     Clase que permite dibujar las notas de una sección.
     Maneja tanto notas TAP como HOLD, con scroll configurable.
     """
-    def __init__(self, notes_data: "NoteDataType", hit_line_xs: tuple[int,int,int,int],
+    def __init__(self, notes_data: "NoteDataType", hit_line_xs: tuple[int,...],
                  hit_line_y: int, scroll_direction: "ScrollDirection", 
                  spawn_time_ms: float, miss_display_ms: float, screen_height: int
                 ):
@@ -36,7 +36,8 @@ class NoteRenderer:
         
         # Una FSM por dirección para controlar el estado visual del receptor
         self.receptors: "dict[NoteDirection, ReceptorFSM]" = {
-            direction: ReceptorFSM()
+            direction: ReceptorFSM(state=NoteReceptorState.IDLE)
+
             for direction in notes_data.keys()
         }
 
@@ -46,26 +47,34 @@ class NoteRenderer:
             for direction in notes_data.keys()
         }
 
+    def reset_receptors(self) -> None:
+        """Resetea todos los receptores a estado IDLE."""
+        for direction in self.receptors:
+            self.receptors[direction].state = NoteReceptorState.IDLE
+            self.receptors[direction].direction = None
+            self.receptors[direction].timer = 0.0
+
     # --- INPUT ---
     def press_hit(self, direction: "NoteDirection") -> None:
         """Notifica al receptor que se presionó una tecla con hit correcto."""
         fsm = self.receptors[direction]
-        fsm.state = ReceptorState.HOLD_HIT
+        fsm.state = NoteReceptorState.HOLD_HIT
+        fsm.timer = 0.0
 
     def press_miss(self, direction: "NoteDirection") -> None:
         """Notifica al receptor que se presionó una tecla con miss."""
         fsm = self.receptors[direction]
-        fsm.state = ReceptorState.HOLD_MISS
+        fsm.state = NoteReceptorState.HOLD_MISS
         fsm.timer = 0.0  # ← resetear timer al entrar en miss
 
     def release_key(self, direction: "NoteDirection") -> None:
         """Notifica al receptor que se soltó una tecla."""
         fsm = self.receptors[direction]
         match fsm.state:
-            case ReceptorState.HOLD_HIT:
-                fsm.state = ReceptorState.RELEASE_HIT
-            case ReceptorState.HOLD_MISS:
-                fsm.state = ReceptorState.RELEASE_MISS
+            case NoteReceptorState.HOLD_HIT:
+                fsm.state = NoteReceptorState.RELEASE_HIT
+            case NoteReceptorState.HOLD_MISS:
+                fsm.state = NoteReceptorState.RELEASE_MISS
             # En cualquier otro estado no hay transición al soltar
 
     # --- SETTERS DE POSICIONES DE LAS NOTAS ---
@@ -91,15 +100,15 @@ class NoteRenderer:
         for direction, fsm in self.receptors.items():
             anim = self.receptor_animations[direction]
             match fsm.state:
-                case ReceptorState.IDLE:
+                case NoteReceptorState.IDLE:
                     self._update_idle(anim, dt)
-                case ReceptorState.HOLD_HIT:
+                case NoteReceptorState.HOLD_HIT:
                     self._update_hold_hit(anim)
-                case ReceptorState.HOLD_MISS:
+                case NoteReceptorState.HOLD_MISS:
                     self._update_hold_miss(anim, dt)
-                case ReceptorState.RELEASE_HIT:
+                case NoteReceptorState.RELEASE_HIT:
                     self._update_release_hit(direction, anim, dt)
-                case ReceptorState.RELEASE_MISS:
+                case NoteReceptorState.RELEASE_MISS:
                     self._update_release_miss(direction, anim, dt)
 
     def _update_idle(self, anim: Animation, dt: float) -> None:
@@ -146,7 +155,11 @@ class NoteRenderer:
             self._go_idle(direction)
 
     def _go_idle(self, direction: "NoteDirection") -> None:
-        self.receptors[direction].state = ReceptorState.IDLE
+        fsm = self.receptors[direction]
+        fsm.state = NoteReceptorState.IDLE
+        fsm.direction = None
+        fsm.timer = 0.0
+
 
     # --- DIBUJAR NOTAS ---
     def draw_receptors(self, surface):

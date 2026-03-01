@@ -1,10 +1,22 @@
 from typing import Type, TYPE_CHECKING
 from .types import StateID, OverlayType
+
+from .song_select_state import SongSelectState
 from .play_state import PlayState
 from .menu_state import MenuState
 from .pause_state import PauseState
+from .game_over_state import GameOverState
+from .win_state import WinState
+from .options_state import OptionsState
+from .transition_state import TransitionState
+from .credits_state import CreditsState
+
 from .chart_creator_state import ChartCreatorState
 from .chart_setup_state import ChartSetupState
+
+from .keybind_editor_state import KeybindEditorState
+from .countdown_state import CountdownState
+
 import pygame
 
 if TYPE_CHECKING:
@@ -23,8 +35,16 @@ class StateManager:
             StateID.MENU: MenuState,
             StateID.PLAY: PlayState,
             StateID.PAUSE: PauseState,
+            StateID.GAME_OVER: GameOverState,
+            StateID.WIN: WinState,
+            StateID.OPTIONS: OptionsState,
             StateID.CHART_CREATOR: ChartCreatorState,
-            StateID.CHART_SETUP: ChartSetupState
+            StateID.CHART_SETUP: ChartSetupState,
+            StateID.TRANSITION: TransitionState,
+            StateID.SONG_SELECT: SongSelectState,
+            StateID.KEYBIND_EDITOR: KeybindEditorState,
+            StateID.COUNTDOWN: CountdownState,
+            StateID.CREDITS: CreditsState
         }
 
     @property
@@ -35,12 +55,17 @@ class StateManager:
             raise ValueError("State Manager: No hay estados en la pila.")
         return self.stack[-1] 
     
+    def change_with_transition(self, state_id: StateID, **kwargs) -> None:
+        """Cambia al estado indicado por su ID pero con animación de transición"""
+        self.change(StateID.TRANSITION, target=state_id, kwargs=kwargs)
+
     def change(self, state_id: StateID, **kwargs) -> None:
         """
         Cambia al estado indicado por su ID (por ejemplo, StateID.PLAY o StateID.PAUSE).
 
         - Si el nuevo estado NO es un overlay, el estado superior actual es eliminado
         - Si el nuevo estado ES un overlay, se apila sobre el estado actual sin eliminarlo.
+        
         Args:
             state_id: identificador ENUM de StateID
         """

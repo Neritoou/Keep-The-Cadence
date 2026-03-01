@@ -12,12 +12,7 @@ def _load_notes(rm: "ResourceManager") -> None:
     notes_sheet = rm.get_spritesheet("NotesType") 
     for direction in NoteDirection:
         
-        frames = notes_sheet.get_frames_at_col(direction,True)
-        for i, frame in enumerate(frames):
-            width, height = frame.get_size()
-            width *= NOTE_SIZE_MULTIPLIER; height *= NOTE_SIZE_MULTIPLIER
-            frame = transform.smoothscale(frame, (int(width), int(height)))
-            frames[i] = frame
+        frames = notes_sheet.get_frames_at_col(direction,True,NOTE_SIZE_MULTIPLIER)
 
         surfaces: NoteSurfaces = {
             "missed": frames[0],

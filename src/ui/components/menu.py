@@ -1,23 +1,28 @@
 import pygame
-from typing import Tuple, List, Callable, TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING
+
 from ...ui import UIElement
-
-
 from ..components import UILabel
+
+if TYPE_CHECKING:
+    from ...ui import ColorValue
 
 class UIMenu(UIElement):
     """
     Representa un menú vertical de opciones.
     Maneja la navegación (arriba/abajo), la selección visual y la ejecución de callbacks.
     """
-    def __init__(self, name: str, x: int, y: int,
-                 options: List[Tuple[str, Callable[[], None]]],
-                 font: pygame.font.Font, *,
-                 spacing: int, marker: str = ">", marker_offset: int = 50,
-                 center_text: bool = False,
-                 normal_color: Tuple[int, int, int] = (255, 255, 255),
-                 selected_color: Tuple[int, int, int] = (255, 215, 0),
-                 visible: bool = True, enabled: bool = True):
+    def __init__(
+            self, name: str, x: int, y: int,
+            options: list[tuple[str, Callable[[], None]]],
+            font: pygame.font.Font, *,
+            spacing: int, marker: str = ">", marker_offset: int = 50,
+            center_text: bool = False,
+            normal_color: "ColorValue" = (255, 255, 255),
+            selected_color: "ColorValue" = (255, 215, 0),
+            visible: bool = True,
+            alpha: int = 255
+            ):
         """
         Args:
             options: Lista de tuplas (texto, callback).
@@ -34,7 +39,7 @@ class UIMenu(UIElement):
         self._callbacks = [option[1] for option in options]
 
         # Inicializacion de los labels para cada opcion
-        self._labels: List[UILabel] = []
+        self._labels: list[UILabel] = []
         self._spacing = spacing
 
         # Colores
@@ -43,7 +48,7 @@ class UIMenu(UIElement):
 
         for i, option_text in enumerate(option_texts):
             label = UILabel(f"{name}_option_{i}", x, (y + i * spacing),
-                            option_text, font, normal_color, center=center_text)
+                            option_text, font, normal_color, center=center_text, alpha=alpha)
             self._labels.append(label)
 
         # Estado interno
@@ -56,13 +61,13 @@ class UIMenu(UIElement):
         
         # Cursor de seleccion
         self._marker = UILabel(f"{name}_marker", marker_x, y,
-                               marker, font, selected_color, center=False)
+                               marker, font, selected_color, center=False, alpha=alpha)
 
         marker_space = self._marker.rect.width + 20
         width = marker_space + max_label_width
         height = len(options) * spacing
 
-        super().__init__(name, x, y, width, height, visible=visible, enabled=enabled)
+        super().__init__(name, x, y, width, height, visible=visible, alpha=alpha)
 
         self._update_selection()
 
@@ -80,34 +85,26 @@ class UIMenu(UIElement):
     
     def move_up(self) -> None:
         """Mueve la selección hacia arriba."""
-        if not self.enabled:
-            return
         self._selected_index = (self._selected_index - 1) % self._option_count
         self._update_selection()
 
     def move_down(self) -> None:
         """Mueve la selección hacia abajo."""
-        if not self.enabled:
-            return
         self._selected_index = (self._selected_index + 1) % self._option_count
         self._update_selection()
 
     def execute_selected(self) -> None:
         """Ejecuta el callback de la opción seleccionada."""
-        if self.enabled and self._callbacks[self._selected_index]:
+        if self._callbacks[self._selected_index]:
             self._callbacks[self._selected_index]()
+    
+
     
     # --- MÉTODOS ABSTRACTOS DE UIElement ---
     def update(self, dt: float) -> None:
         super().update(dt)
-
         for label in self._labels:
-            label.visible = self.visible
-            label.alpha = self.alpha
             label.update(dt)
-
-        self._marker.visible = self.visible
-        self._marker.alpha = self.alpha
         self._marker.update(dt)
 
     def render(self, surface: pygame.Surface) -> None:
@@ -130,3 +127,8 @@ class UIMenu(UIElement):
         
         # Mover cursor a la opción seleccionada
         self._marker.rect.y = self._labels[self._selected_index].rect.y
+
+    def fade_to_all(self, target: int, duration: float) -> None:
+        """Aplica fade a todos los labels internos y el cursor."""
+        for label in (*self._labels, self._marker):
+            label.fade_to(target, duration)
