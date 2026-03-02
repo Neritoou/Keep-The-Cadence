@@ -4,17 +4,17 @@
             "left",
             "a"
         ],
-        "right": [
-            "d",
-            "right"
+        "down": [
+            "down",
+            "s"
         ],
         "up": [
             "up",
             "w"
         ],
-        "down": [
-            "down",
-            "s"
+        "right": [
+            "right",
+            "d"
         ]
     },
     "ui": {
@@ -22,17 +22,17 @@
             "left",
             "a"
         ],
-        "right": [
-            "d",
-            "right"
+        "down": [
+            "down",
+            "s"
         ],
         "up": [
             "up",
             "w"
         ],
-        "down": [
-            "down",
-            "s"
+        "right": [
+            "right",
+            "d"
         ],
         "select": [
             "return",
